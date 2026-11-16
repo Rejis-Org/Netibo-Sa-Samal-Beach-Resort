@@ -1,5 +1,7 @@
 -- Netibo sa Samal app schema. Run this whole file once in Supabase SQL Editor.
--- Prices are stored as whole PHP pesos. Unknown prices remain NULL and inactive.
+-- Prices are stored as whole PHP pesos. Unknown prices remain NULL and clearly marked.
+-- Guest chat and booking ownership use Supabase anonymous Auth; enable anonymous sign-ins before activating those flows.
+-- Keep normal public email/password sign-ups disabled. Admin accounts are assigned owner/staff in user_roles.
 begin;
 
 create table if not exists public.user_roles (
@@ -7,6 +9,12 @@ create table if not exists public.user_roles (
   role text not null check (role in ('owner', 'staff')),
   created_at timestamptz not null default now()
 );
+
+-- If an earlier patch collapsed owner/staff to admin, conservatively restore admin rows as staff.
+-- Reassign the owner by email using the README SQL after running this file.
+alter table public.user_roles drop constraint if exists user_roles_role_check;
+update public.user_roles set role = 'staff' where role = 'admin';
+alter table public.user_roles add constraint user_roles_role_check check (role in ('owner', 'staff'));
 
 create table if not exists public.settings (
   key text primary key,
@@ -74,7 +82,8 @@ create table if not exists public.bookings (
   deposit_required integer check (deposit_required is null or deposit_required >= 0),
   payment_deadline timestamptz,
   hold_expires_at timestamptz,
-  access_token text not null unique check (length(access_token) >= 32),
+  access_token text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') check (length(access_token) >= 32),
+  guest_uid uuid references auth.users(id) on delete set null default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (date_end >= date_start),
@@ -112,7 +121,8 @@ create table if not exists public.blocked_dates (
 
 create table if not exists public.conversations (
   id uuid primary key default gen_random_uuid(),
-  visitor_token text not null unique check (length(visitor_token) >= 32),
+  visitor_token text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') check (length(visitor_token) >= 32),
+  guest_uid uuid references auth.users(id) on delete set null default auth.uid(),
   guest_name text,
   contact text,
   booking_id uuid references public.bookings(id) on delete set null,
@@ -131,6 +141,11 @@ create table if not exists public.messages (
   created_at timestamptz not null default now()
 );
 
+-- Keep message labels aligned with the owner/staff admin roles.
+alter table public.messages drop constraint if exists messages_sender_check;
+update public.messages set sender = 'owner' where sender = 'admin';
+alter table public.messages add constraint messages_sender_check check (sender in ('guest', 'owner'));
+
 create table if not exists public.audit_log (
   id bigint generated always as identity primary key,
   actor_id uuid references auth.users(id) on delete set null,
@@ -142,11 +157,19 @@ create table if not exists public.audit_log (
   created_at timestamptz not null default now()
 );
 
+-- Keep guests tied to their hidden anonymous Auth user; admin accounts remain owner/staff.
+alter table public.bookings add column if not exists guest_uid uuid references auth.users(id) on delete set null default auth.uid();
+alter table public.conversations add column if not exists guest_uid uuid references auth.users(id) on delete set null default auth.uid();
+alter table public.bookings alter column access_token set default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+alter table public.conversations alter column visitor_token set default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+
 create index if not exists bookings_dates_status_idx on public.bookings (date_start, date_end, status);
 create index if not exists bookings_created_at_idx on public.bookings (created_at desc);
 create index if not exists payments_booking_created_idx on public.payments (booking_id, created_at desc);
 create index if not exists messages_conversation_created_idx on public.messages (conversation_id, created_at desc);
 create index if not exists conversations_last_message_idx on public.conversations (last_message_at desc);
+create index if not exists conversations_guest_uid_idx on public.conversations (guest_uid);
+create index if not exists bookings_guest_uid_idx on public.bookings (guest_uid);
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -179,6 +202,9 @@ begin
     return new;
   end if;
 
+  -- Serialize booking writes so simultaneous requests cannot claim the same unit/date.
+  perform pg_advisory_xact_lock(hashtext('netibo_bookings'));
+
   if exists (
     select 1 from public.blocked_dates d
     where d.date between new.date_start and new.date_end
@@ -197,6 +223,28 @@ begin
     raise exception 'An exclusive event already holds one or more selected dates.' using errcode = '23P01';
   end if;
 
+  if new.type = 'exclusive' and new.status in ('awaiting_payment', 'confirmed') and exists (
+    select 1 from public.bookings b
+    where b.id <> new.id
+      and b.type <> 'exclusive'
+      and b.status in ('awaiting_payment', 'confirmed')
+      and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+      and daterange(b.date_start, b.date_end, '[]') && daterange(new.date_start, new.date_end, '[]')
+  ) then
+    raise exception 'Other bookings already hold one or more of these dates.' using errcode = '23P01';
+  end if;
+
+  if cardinality(new.unit_ids) > 0 and new.status in ('awaiting_payment', 'confirmed') and exists (
+    select 1 from public.bookings b
+    where b.id <> new.id
+      and b.unit_ids && new.unit_ids
+      and b.status in ('awaiting_payment', 'confirmed')
+      and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+      and daterange(b.date_start, b.date_end, '[]') && daterange(new.date_start, new.date_end, '[]')
+  ) then
+    raise exception 'That cottage or room is already booked for these dates.' using errcode = '23P01';
+  end if;
+
   return new;
 end;
 $$;
@@ -210,22 +258,77 @@ create trigger settings_touch_updated_at before update on public.settings for ea
 drop trigger if exists bookings_touch_updated_at on public.bookings;
 create trigger bookings_touch_updated_at before update on public.bookings for each row execute function public.touch_updated_at();
 drop trigger if exists bookings_guard_availability on public.bookings;
-create trigger bookings_guard_availability before insert or update of type, status, date_start, date_end on public.bookings for each row execute function public.guard_booking_availability();
+create trigger bookings_guard_availability before insert or update of type, status, date_start, date_end, unit_ids on public.bookings for each row execute function public.guard_booking_availability();
 
-create or replace function public.get_public_availability(from_date date, through_date date)
-returns table (date date, reason text)
+create or replace function public.touch_conversation()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  update public.conversations set last_message_at = new.created_at where id = new.conversation_id;
+  return new;
+end;
+$$;
+revoke all on function public.touch_conversation() from public;
+
+drop trigger if exists messages_touch_conversation on public.messages;
+create trigger messages_touch_conversation after insert on public.messages
+  for each row execute function public.touch_conversation();
+
+create or replace function public.mark_messages_read(p_conversation_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if public.is_admin() then
+    update public.messages set read_at = now()
+    where conversation_id = p_conversation_id and sender = 'guest' and read_at is null;
+  elsif exists (
+    select 1 from public.conversations c
+    where c.id = p_conversation_id and c.guest_uid = (select auth.uid())
+  ) then
+    update public.messages set read_at = now()
+    where conversation_id = p_conversation_id and sender = 'owner' and read_at is null;
+  end if;
+end;
+$$;
+
+create or replace function public.expire_unpaid_holds()
+returns integer language plpgsql security definer set search_path = '' as $$
+declare
+  affected integer;
+begin
+  update public.bookings set status = 'cancelled'
+  where status = 'awaiting_payment' and hold_expires_at is not null and hold_expires_at <= now();
+  get diagnostics affected = row_count;
+  return affected;
+end;
+$$;
+
+drop function if exists public.get_public_availability(date, date);
+create function public.get_public_availability(from_date date, through_date date)
+returns table (day date, state text)
 language sql stable security definer set search_path = '' as $$
-  select d.date, 'closed'::text
-  from public.blocked_dates d
-  where d.date between from_date and through_date
-  union
-  select day::date, 'exclusive_event'::text
-  from public.bookings b
-  cross join lateral generate_series(b.date_start::timestamp, b.date_end::timestamp, interval '1 day') as day
-  where b.type = 'exclusive'
-    and b.status in ('awaiting_payment', 'confirmed')
-    and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
-    and day::date between from_date and through_date;
+  -- Pending requests are omitted: they do not reserve dates and expose no guest activity.
+  select dates.day, (array_agg(dates.state order by dates.priority desc))[1]
+  from (
+    select d.date as day, 'closed'::text as state, 4 as priority
+    from public.blocked_dates d
+    where d.date between from_date and through_date
+    union all
+    select series.day::date, 'exclusive'::text, 3
+    from public.bookings b
+    cross join lateral generate_series(b.date_start::timestamp, b.date_end::timestamp, interval '1 day') as series(day)
+    where b.type = 'exclusive'
+      and b.status in ('awaiting_payment', 'confirmed')
+      and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+      and series.day::date between from_date and through_date
+    union all
+    select series.day::date, 'partial'::text, 2
+    from public.bookings b
+    cross join lateral generate_series(b.date_start::timestamp, b.date_end::timestamp, interval '1 day') as series(day)
+    where b.type <> 'exclusive'
+      and b.status in ('awaiting_payment', 'confirmed')
+      and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+      and series.day::date between from_date and through_date
+  ) as dates
+  group by dates.day;
 $$;
 
 alter table public.user_roles enable row level security;
@@ -256,7 +359,10 @@ create policy "admins manage packages" on public.packages for all to authenticat
 drop policy if exists "owner manages settings" on public.settings;
 create policy "owner manages settings" on public.settings for all to authenticated using ((select public.is_owner())) with check ((select public.is_owner()));
 drop policy if exists "public reads resort phone" on public.settings;
-create policy "public reads resort phone" on public.settings for select to anon, authenticated using (key = 'contact_phone');
+drop policy if exists "public settings are readable" on public.settings;
+create policy "public settings are readable" on public.settings for select to anon, authenticated using (
+  key in ('contact_phone', 'reply_time_hours', 'day_tour_start', 'overnight_start', 'arrival_directions')
+);
 drop policy if exists "admins manage bookings" on public.bookings;
 create policy "admins manage bookings" on public.bookings for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 drop policy if exists "admins manage payments" on public.payments;
@@ -265,8 +371,39 @@ drop policy if exists "admins manage blocked dates" on public.blocked_dates;
 create policy "admins manage blocked dates" on public.blocked_dates for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 drop policy if exists "admins manage conversations" on public.conversations;
 create policy "admins manage conversations" on public.conversations for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "guests read own conversations" on public.conversations;
+create policy "guests read own conversations" on public.conversations for select to authenticated using (guest_uid = (select auth.uid()));
+drop policy if exists "guests start conversations" on public.conversations;
+create policy "guests start conversations" on public.conversations for insert to authenticated with check (
+  guest_uid = (select auth.uid())
+  and status = 'open'
+  and (
+    booking_id is null
+    or exists (
+      select 1 from public.bookings b
+      where b.id = booking_id and b.guest_uid = (select auth.uid())
+    )
+  )
+);
 drop policy if exists "admins manage messages" on public.messages;
 create policy "admins manage messages" on public.messages for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "guests read own messages" on public.messages;
+create policy "guests read own messages" on public.messages for select to authenticated using (
+  exists (
+    select 1 from public.conversations c
+    where c.id = conversation_id and c.guest_uid = (select auth.uid())
+  )
+);
+drop policy if exists "guests send messages" on public.messages;
+create policy "guests send messages" on public.messages for insert to authenticated with check (
+  sender = 'guest'
+  and exists (
+    select 1 from public.conversations c
+    where c.id = conversation_id and c.guest_uid = (select auth.uid())
+  )
+);
+drop policy if exists "guests read own bookings" on public.bookings;
+create policy "guests read own bookings" on public.bookings for select to authenticated using (guest_uid = (select auth.uid()));
 drop policy if exists "admins read audit log" on public.audit_log;
 create policy "admins read audit log" on public.audit_log for select to authenticated using ((select public.is_admin()));
 drop policy if exists "admins add audit log" on public.audit_log;
@@ -277,9 +414,28 @@ grant select on public.settings to anon;
 grant select, insert, update, delete on public.user_roles, public.settings, public.units, public.packages, public.bookings, public.payments, public.blocked_dates, public.conversations, public.messages, public.audit_log to authenticated;
 revoke all on function public.get_public_availability(date, date) from public;
 grant execute on function public.get_public_availability(date, date) to anon, authenticated;
+revoke all on function public.mark_messages_read(uuid) from public;
+grant execute on function public.mark_messages_read(uuid) to authenticated;
+revoke all on function public.expire_unpaid_holds() from public;
+grant execute on function public.expire_unpaid_holds() to service_role;
 revoke all on function public.is_admin() from public;
 revoke all on function public.is_owner() from public;
 grant execute on function public.is_admin(), public.is_owner() to anon, authenticated;
+
+-- Enable live chat events when the standard Supabase Realtime publication exists.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.messages;
+    exception when duplicate_object then null;
+    end;
+    begin
+      alter publication supabase_realtime add table public.conversations;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end $$;
 
 insert into public.settings (key, value) values
   ('contact_phone', '"0927 485 2412"'::jsonb),
@@ -325,9 +481,18 @@ insert into storage.buckets (id, name, public)
 values ('payment-proofs', 'payment-proofs', false)
 on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+values ('unit-photos', 'unit-photos', true)
+on conflict (id) do nothing;
+
 drop policy if exists "admins read payment proofs" on storage.objects;
 create policy "admins read payment proofs" on storage.objects for select to authenticated using (bucket_id = 'payment-proofs' and (select public.is_admin()));
 drop policy if exists "admins manage payment proofs" on storage.objects;
 create policy "admins manage payment proofs" on storage.objects for all to authenticated using (bucket_id = 'payment-proofs' and (select public.is_admin())) with check (bucket_id = 'payment-proofs' and (select public.is_admin()));
+
+drop policy if exists "admins manage unit photos" on storage.objects;
+create policy "admins manage unit photos" on storage.objects for all to authenticated
+  using (bucket_id = 'unit-photos' and (select public.is_admin()))
+  with check (bucket_id = 'unit-photos' and (select public.is_admin()));
 
 commit;

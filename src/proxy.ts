@@ -12,6 +12,7 @@ export async function proxy(request: NextRequest) {
   const hasAuthCookie = request.cookies.getAll().some(({ name }) => name.startsWith("sb-") && name.includes("auth-token"));
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
+  if (isAdminPath && (!env || !hasAuthCookie)) return NextResponse.next({ request });
   if (!env || (!isAdminPath && !hasAuthCookie)) return handleLocale(request);
 
   let supabaseResponse = NextResponse.next({ request });
@@ -28,6 +29,8 @@ export async function proxy(request: NextRequest) {
   });
 
   await supabase.auth.getClaims();
+  if (isAdminPath) return supabaseResponse;
+
   const localeResponse = handleLocale(request);
   supabaseResponse.cookies.getAll().forEach((cookie) => localeResponse.cookies.set(cookie));
   for (const name of ["cache-control", "expires", "pragma"]) {

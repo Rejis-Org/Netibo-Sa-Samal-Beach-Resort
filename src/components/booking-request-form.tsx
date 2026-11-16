@@ -73,7 +73,25 @@ export function BookingRequestForm({ locale, options, days, minDate, maxDate, er
         <option value="day-tour">{t("dayTour")}</option><option value="overnight">{t("overnight")}</option>
       </select><small>{t("childAge")}</small></label>}
       <div className="booking-calendar-block"><div><h3>{t("chooseDate")}</h3><p>{t("oneDateOnly")}</p></div>
-        <AvailabilityCalendar days={days} locale={locale} minDate={minDate} maxDate={maxDate} selectedDate={date} onSelect={setDate} reserveType={kind === "exclusive" ? "exclusive" : "walk-in"} selectable t={(key) => t(`calendar.${key}` as never)} />
+        <AvailabilityCalendar
+          days={days}
+          locale={locale}
+          minDate={minDate}
+          maxDate={maxDate}
+          selectedDate={date}
+          onSelect={setDate}
+          reserveType={kind === "exclusive" ? "exclusive" : "walk-in"}
+          selectable
+          labels={{
+            previousMonth: t("calendar.previousMonth"),
+            nextMonth: t("calendar.nextMonth"),
+            available: t("calendar.available"),
+            partial: t("calendar.partial"),
+            exclusive: t("calendar.exclusive"),
+            closed: t("calendar.closed"),
+            legend: t("calendar.legend"),
+          }}
+        />
         <input type="hidden" name="date" value={date} />
         {date && <p className="booking-selected-date">{t("selectedDate", { date: new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(new Date(`${date}T12:00:00`)) })}</p>}
       </div>

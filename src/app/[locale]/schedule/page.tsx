@@ -15,7 +15,22 @@ export default async function SchedulePage() {
   return <section className="page-section page-container">
     <PageIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
     {days ? <div className="schedule-calendar-wrap">
-      <AvailabilityCalendar days={days} locale={localeValue as AppLocale} minDate={start} maxDate={end} selectable={false} t={(key) => t(`calendar.${key}` as never)} />
+      <AvailabilityCalendar
+        days={days}
+        locale={localeValue as AppLocale}
+        minDate={start}
+        maxDate={end}
+        selectable={false}
+        labels={{
+          previousMonth: t("calendar.previousMonth"),
+          nextMonth: t("calendar.nextMonth"),
+          available: t("calendar.available"),
+          partial: t("calendar.partial"),
+          exclusive: t("calendar.exclusive"),
+          closed: t("calendar.closed"),
+          legend: t("calendar.legend"),
+        }}
+      />
       <p className="page-note">{t("calendarNote")}</p>
       <Link className="button button-blue" href="/book">{t("bookAction")} <span aria-hidden="true">↗</span></Link>
     </div> : <div className="empty-panel schedule-panel"><span className="panel-icon" aria-hidden="true">▦</span><h2>{t("calendarTitle")}</h2><p>{t("calendarText")}</p><Link className="button button-blue" href="/contact">{t("contactAction")} <span aria-hidden="true">↗</span></Link></div>}

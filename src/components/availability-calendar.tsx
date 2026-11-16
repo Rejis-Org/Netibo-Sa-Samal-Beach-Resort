@@ -13,7 +13,15 @@ type CalendarProps = {
   onSelect?: (date: string) => void;
   reserveType?: "exclusive" | "walk-in";
   selectable?: boolean;
-  t: (key: string) => string;
+  labels: {
+    previousMonth: string;
+    nextMonth: string;
+    available: string;
+    partial: string;
+    exclusive: string;
+    closed: string;
+    legend: string;
+  };
 };
 
 function parseDate(value: string) {
@@ -25,7 +33,7 @@ function dateValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedDate, onSelect, reserveType = "walk-in", selectable = false, t }: CalendarProps) {
+export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedDate, onSelect, reserveType = "walk-in", selectable = false, labels }: CalendarProps) {
   const [month, setMonth] = useState(() => {
     const today = parseDate(minDate);
     return new Date(today.getFullYear(), today.getMonth(), 1, 12);
@@ -53,9 +61,9 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
   return (
     <div className="availability-calendar">
       <div className="calendar-month-heading">
-        <button type="button" className="calendar-month-button" aria-label={t("previousMonth")} disabled={!canGoBack} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}>‹</button>
+        <button type="button" className="calendar-month-button" aria-label={labels.previousMonth} disabled={!canGoBack} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}>‹</button>
         <h3>{monthFormatter.format(month)}</h3>
-        <button type="button" className="calendar-month-button" aria-label={t("nextMonth")} disabled={!canGoForward} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}>›</button>
+        <button type="button" className="calendar-month-button" aria-label={labels.nextMonth} disabled={!canGoForward} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}>›</button>
       </div>
       <div className="calendar-grid" role="grid" aria-label={monthFormatter.format(month)}>
         {weekdays.map((weekday, index) => <span role="columnheader" className="calendar-weekday" key={`${weekday}-${index}`}>{weekday}</span>)}
@@ -67,7 +75,7 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
           const beyondWindow = value > maxDate;
           const unavailable = state === "closed" || state === "exclusive" || (reserveType === "exclusive" && state === "partial");
           const disabled = past || beyondWindow || (selectable ? unavailable : false);
-          const stateLabel = state ? t(state) : t("available");
+          const stateLabel = state ? labels[state] : labels.available;
           const className = [
             "calendar-day",
             !inMonth && "calendar-day-outside",
@@ -91,11 +99,11 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
           );
         })}
       </div>
-      <div className="calendar-legend" aria-label={t("legend")}>
-        <span><i className="legend-dot legend-available" />{t("available")}</span>
-        <span><i className="legend-dot legend-partial" />{t("partial")}</span>
-        <span><i className="legend-dot legend-exclusive" />{t("exclusive")}</span>
-        <span><i className="legend-dot legend-closed" />{t("closed")}</span>
+      <div className="calendar-legend" aria-label={labels.legend}>
+        <span><i className="legend-dot legend-available" />{labels.available}</span>
+        <span><i className="legend-dot legend-partial" />{labels.partial}</span>
+        <span><i className="legend-dot legend-exclusive" />{labels.exclusive}</span>
+        <span><i className="legend-dot legend-closed" />{labels.closed}</span>
       </div>
     </div>
   );

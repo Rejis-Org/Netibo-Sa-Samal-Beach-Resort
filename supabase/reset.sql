@@ -24,7 +24,7 @@ begin
       join pg_namespace n on n.oid = c.relnamespace
       where p.pubname = 'supabase_realtime'
         and n.nspname = 'public'
-        and c.relname in ('messages', 'conversations')
+        and c.relname in ('messages', 'conversations', 'bookings')
     loop
       execute 'alter publication supabase_realtime drop table ' || relation.qualified_name;
     end loop;

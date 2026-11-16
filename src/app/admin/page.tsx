@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getAdminContext } from "@/lib/supabase/admin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
-import { logoutAction } from "./actions";
+import { logoutAction, updateBookingStatusAction } from "./actions";
 import { PackageEditor, SettingsEditor, UnitEditor } from "./editor-forms";
 
 type AdminPageProps = { searchParams: Promise<{ error?: string; saved?: string }> };
@@ -13,6 +13,9 @@ const errorMessages: Record<string, string> = {
   package: "Please check the package fields and try saving again.",
   settings: "Please check the setting value and try saving again.",
   access: "Only the owner account can change resort settings.",
+  booking: "That booking could not be updated. Refresh the list and try again.",
+  deadline: "Set a payment deadline in Resort settings before approving a request.",
+  conflict: "Those dates were just taken by another approved booking. The request remains pending.",
 };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
@@ -34,15 +37,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const admin = await getAdminContext();
   if (!admin) redirect("/admin/login?error=access");
 
-  const [{ data: units, error: unitsError }, { data: packages, error: packagesError }] = await Promise.all([
+  const [{ data: units, error: unitsError }, { data: packages, error: packagesError }, { data: bookings, error: bookingsError }] = await Promise.all([
     admin.supabase.from("units").select("*").order("sort_order"),
     admin.supabase.from("packages").select("*").order("sort_order"),
+    admin.supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(100),
   ]);
   const { data: settings, error: settingsError } = admin.role === "owner"
     ? await admin.supabase.from("settings").select("*").order("key")
     : { data: [], error: null };
   const { error, saved } = await searchParams;
-  const loadFailed = unitsError || packagesError || settingsError;
+  const loadFailed = unitsError || packagesError || bookingsError || settingsError;
+  const packageNames = new Map((packages ?? []).map((item) => [item.id, typeof item.name === "object" && item.name && !Array.isArray(item.name) && typeof item.name.en === "string" ? item.name.en : item.slug]));
+  const unitNames = new Map((units ?? []).map((item) => [item.id, item.name]));
+  const pendingCount = (bookings ?? []).filter((item) => item.status === "pending").length;
+  const unreadBookingCount = pendingCount;
 
   return (
     <main className="admin-shell">
@@ -51,17 +59,40 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="admin-account"><span>{admin.email} · {admin.role}</span><form action={logoutAction}><button className="admin-text-button" type="submit">Sign out</button></form></div>
       </header>
       <nav className="admin-nav" aria-label="Admin sections">
-        <a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
+        <a href="#bookings">Bookings</a><a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
         <Link href="/">View public site ↗</Link>
       </nav>
-      <section className="admin-summary-grid" aria-label="Catalog summary">
+      <section className="admin-summary-grid" aria-label="Resort overview">
+        <article><span>Pending requests</span><strong>{unreadBookingCount}</strong></article>
+        <article><span>Upcoming exclusive dates</span><strong>{(bookings ?? []).filter((item) => item.type === "exclusive" && (item.status === "awaiting_payment" || item.status === "confirmed") && item.date_start >= new Date().toISOString().slice(0, 10)).length}</strong></article>
         <article><span>Units</span><strong>{units?.length ?? 0}</strong></article>
-        <article><span>Packages and fees</span><strong>{packages?.length ?? 0}</strong></article>
         <article><span>Signed in as</span><strong className="admin-summary-role">{admin.role === "owner" ? "Owner" : "Staff"}</strong></article>
       </section>
       {saved && <p className="admin-message admin-message-success">Changes saved. The public pages now show the latest catalog.</p>}
       {error && <p className="admin-message admin-message-error">{errorMessages[error] ?? "Something went wrong. Try again or check the database connection."}</p>}
       {loadFailed && <p className="admin-message admin-message-error">Could not load resort data. Confirm that `supabase/schema.sql` has been run in this project.</p>}
+
+      <section id="bookings" className="admin-section">
+        <div className="admin-section-heading"><div><p className="eyebrow">Guest requests</p><h2>Bookings</h2></div><p>Approve a request to start its configured payment deadline. A date is not held while a request is pending.</p></div>
+        <div className="admin-booking-list">
+          {(bookings ?? []).length === 0 && <p className="admin-empty-state">No booking requests yet.</p>}
+          {(bookings ?? []).map((booking) => {
+            const title = booking.type === "exclusive" ? packageNames.get(booking.package_id ?? "") ?? "Exclusive package" : booking.type === "unit" ? booking.unit_ids.map((id) => unitNames.get(id) ?? "Stay").join(", ") : "Entrance";
+            const date = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" }).format(new Date(`${booking.date_start}T12:00:00+08:00`));
+            return <article className="admin-booking-card" key={booking.id}>
+              <div className="admin-booking-heading"><div><p className="eyebrow">{booking.ref_code} · {date}</p><h3>{booking.guest_name}</h3><p>{title} · {booking.adults + booking.children} guests</p></div><span className={`booking-status booking-status-${booking.status}`}>{booking.status.replaceAll("_", " ")}</span></div>
+              <div className="admin-booking-details"><a href={`tel:${booking.phone.replace(/[^+\d]/g, "")}`}>{booking.phone}</a>{booking.guest_email && <a href={`mailto:${booking.guest_email}`}>{booking.guest_email}</a>}<strong>{new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(booking.total_amount)}</strong></div>
+              {booking.notes && <p className="admin-booking-notes">{booking.notes}</p>}
+              {booking.deposit_required !== null && <p className="admin-help">Deposit requested: ₱{booking.deposit_required.toLocaleString("en-PH")} · Deadline {booking.payment_deadline ? new Date(booking.payment_deadline).toLocaleString("en-PH") : "not set"}</p>}
+              <form className="admin-booking-actions" action={updateBookingStatusAction}><input type="hidden" name="booking_id" value={booking.id} />
+                {booking.status === "pending" && <><button className="button button-blue" name="booking_action" value="approve">Approve</button><button className="button button-outline" name="booking_action" value="decline">Decline</button></>}
+                {booking.status === "awaiting_payment" && <><button className="button button-blue" name="booking_action" value="paid">Mark paid</button><button className="button button-outline" name="booking_action" value="cancel">Cancel</button></>}
+                {booking.status === "confirmed" && <><button className="button button-blue" name="booking_action" value="complete">Complete</button><button className="button button-outline" name="booking_action" value="cancel">Cancel</button></>}
+              </form>
+            </article>;
+          })}
+        </div>
+      </section>
 
       <section id="units" className="admin-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Places to stay</p><h2>Cottages and rooms</h2></div><p>Update a price or turn a listing on or off.</p></div>

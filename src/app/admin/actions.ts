@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Json } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 import { getAdminContext } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -194,4 +194,50 @@ export async function saveSettingAction(formData: FormData) {
   await logChange(admin.supabase, admin.userId, "settings", key, oldRow as unknown as Json ?? null, { key, value, updated_by: admin.userId });
   revalidatePath("/", "layout");
   redirect("/admin?saved=settings#settings");
+}
+
+export async function updateBookingStatusAction(formData: FormData) {
+  const admin = await getAdminContext();
+  if (!admin) redirect("/admin/login");
+  const id = readText(formData, "booking_id", 64);
+  const action = readText(formData, "booking_action", 32);
+  if (!id || !action || !["approve", "decline", "paid", "cancel", "complete"].includes(action)) redirect("/admin?error=booking#bookings");
+
+  const { data: oldRow, error: readError } = await admin.supabase.from("bookings").select("*").eq("id", id).maybeSingle();
+  if (readError || !oldRow) redirect("/admin?error=booking#bookings");
+  let status: "awaiting_payment" | "confirmed" | "cancelled" | "completed";
+  let update: Partial<Database["public"]["Tables"]["bookings"]["Update"]> = {};
+  if (action === "approve") {
+    if (oldRow.status !== "pending") redirect("/admin?error=booking#bookings");
+    const { data: deadlineSetting } = await admin.supabase.from("settings").select("value").eq("key", "payment_deadline_hours").maybeSingle();
+    const hours = typeof deadlineSetting?.value === "number" ? deadlineSetting.value : null;
+    if (hours === null || hours <= 0 || hours > 24 * 30) redirect("/admin?error=deadline#settings");
+    const { data: depositAmount } = await admin.supabase.from("settings").select("value").eq("key", "deposit_amount").maybeSingle();
+    const { data: depositPercent } = await admin.supabase.from("settings").select("value").eq("key", "deposit_percent").maybeSingle();
+    const fixedDeposit = typeof depositAmount?.value === "number" ? depositAmount.value : null;
+    const percent = typeof depositPercent?.value === "number" ? depositPercent.value : null;
+    const deposit = fixedDeposit ?? (percent === null ? null : Math.ceil(oldRow.total_amount * percent / 100));
+    const deadline = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+    status = "awaiting_payment";
+    update = { status, deposit_required: deposit, payment_deadline: deadline, hold_expires_at: deadline };
+  } else if (action === "decline" || action === "cancel") {
+    if (oldRow.status === "completed" || oldRow.status === "cancelled") redirect("/admin?error=booking#bookings");
+    status = "cancelled";
+    update = { status, hold_expires_at: null };
+  } else if (action === "paid") {
+    if (oldRow.status !== "awaiting_payment") redirect("/admin?error=booking#bookings");
+    status = "confirmed";
+    update = { status, hold_expires_at: null };
+  } else {
+    if (oldRow.status !== "confirmed") redirect("/admin?error=booking#bookings");
+    status = "completed";
+    update = { status, hold_expires_at: null };
+  }
+
+  const { error } = await admin.supabase.from("bookings").update(update).eq("id", id);
+  if (error) redirect(`/admin?error=${error.code === "23P01" ? "conflict" : "booking"}#bookings`);
+  await logChange(admin.supabase, admin.userId, "bookings", id, oldRow as unknown as Json, update as unknown as Json);
+  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin?saved=booking#bookings");
 }

@@ -1,27 +1,40 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
-import { Link } from "@/i18n/navigation";
+import { BookingRequestForm } from "@/components/booking-request-form";
+import { getAvailabilityWindow, getBookingOptions, getPublicAvailability } from "@/lib/booking-data";
 import { FACEBOOK_URL, RESORT_PHONE_TEL } from "@/lib/site";
 import { getResortPhone } from "@/lib/public-settings";
+import type { AppLocale } from "@/i18n/routing";
 
 export const metadata: Metadata = {
   title: "Book a visit",
   description: "Send a booking request to Netibo sa Samal Beach Resort.",
 };
 
-export default async function BookPage() {
-  const t = await getTranslations("pages.book");
-  const phone = await getResortPhone();
+type Props = { searchParams: Promise<{ error?: string }> };
+
+export default async function BookPage({ searchParams }: Props) {
+  const [t, localeValue, query, phone, options] = await Promise.all([
+    getTranslations("pages.book"), getLocale(), searchParams, getResortPhone(), getBookingOptions(await getLocale() as AppLocale),
+  ]);
+  const locale = localeValue as AppLocale;
+  const { start, end } = getAvailabilityWindow();
+  const days = options ? await getPublicAvailability(start, end) : null;
   return (
     <section className="page-section page-container">
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
-      <div className="contact-choice-grid">
-        <a className="contact-choice" href={`tel:${phone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}><span className="choice-kicker">{t("callKicker")}</span><strong>{phone}</strong><span>{t("callAction")} ↗</span></a>
-        <a className="contact-choice contact-choice-sun" href={FACEBOOK_URL} target="_blank" rel="noreferrer"><span className="choice-kicker">{t("messageKicker")}</span><strong>{t("messageTitle")}</strong><span>{t("messageAction")} ↗</span></a>
+      <div className="booking-layout">
+        {options && days ? <BookingRequestForm locale={locale} options={options} days={days} minDate={start} maxDate={end} error={query.error} /> : <div className="booking-unavailable">
+          <h2>{t("offlineTitle")}</h2><p>{t("offlineText")}</p>
+          <a className="button button-blue" href={`tel:${phone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}>{t("callKicker")}: {phone}</a>
+          <a className="button button-outline" href={FACEBOOK_URL} target="_blank" rel="noreferrer">{t("messageKicker")}</a>
+        </div>}
+        <aside className="booking-aside">
+          <p className="eyebrow">{t("asideEyebrow")}</p><h2>{t("asideTitle")}</h2>
+          <p>{t("asideText")}</p><ul><li>{t("asidePending")}</li><li>{t("asidePay")}</li><li>{t("asidePrivacy")}</li></ul>
+        </aside>
       </div>
-      <p className="page-note">{t("onlineNote")}</p>
-      <Link className="text-link" href="/schedule">{t("scheduleAction")} ↗</Link>
     </section>
   );
 }

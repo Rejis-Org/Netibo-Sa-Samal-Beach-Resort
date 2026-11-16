@@ -361,7 +361,7 @@ create policy "owner manages settings" on public.settings for all to authenticat
 drop policy if exists "public reads resort phone" on public.settings;
 drop policy if exists "public settings are readable" on public.settings;
 create policy "public settings are readable" on public.settings for select to anon, authenticated using (
-  key in ('contact_phone', 'reply_time_hours', 'day_tour_start', 'overnight_start', 'arrival_directions')
+  key in ('contact_phone', 'reply_time_hours', 'day_tour_start', 'overnight_start', 'arrival_directions', 'extra_guest_fee')
 );
 drop policy if exists "admins manage bookings" on public.bookings;
 create policy "admins manage bookings" on public.bookings for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
@@ -422,7 +422,7 @@ revoke all on function public.is_admin() from public;
 revoke all on function public.is_owner() from public;
 grant execute on function public.is_admin(), public.is_owner() to anon, authenticated;
 
--- Enable live chat events when the standard Supabase Realtime publication exists.
+-- Enable live chat and admin booking updates when the standard Supabase Realtime publication exists.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
@@ -432,6 +432,10 @@ begin
     end;
     begin
       alter publication supabase_realtime add table public.conversations;
+    exception when duplicate_object then null;
+    end;
+    begin
+      alter publication supabase_realtime add table public.bookings;
     exception when duplicate_object then null;
     end;
   end if;

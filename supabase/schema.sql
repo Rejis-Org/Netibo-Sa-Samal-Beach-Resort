@@ -255,6 +255,8 @@ create policy "admins manage packages" on public.packages for all to authenticat
 
 drop policy if exists "owner manages settings" on public.settings;
 create policy "owner manages settings" on public.settings for all to authenticated using ((select public.is_owner())) with check ((select public.is_owner()));
+drop policy if exists "public reads resort phone" on public.settings;
+create policy "public reads resort phone" on public.settings for select to anon, authenticated using (key = 'contact_phone');
 drop policy if exists "admins manage bookings" on public.bookings;
 create policy "admins manage bookings" on public.bookings for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 drop policy if exists "admins manage payments" on public.payments;
@@ -271,6 +273,7 @@ drop policy if exists "admins add audit log" on public.audit_log;
 create policy "admins add audit log" on public.audit_log for insert to authenticated with check ((select public.is_admin()));
 
 grant select on public.units, public.packages to anon, authenticated;
+grant select on public.settings to anon;
 grant select, insert, update, delete on public.user_roles, public.settings, public.units, public.packages, public.bookings, public.payments, public.blocked_dates, public.conversations, public.messages, public.audit_log to authenticated;
 revoke all on function public.get_public_availability(date, date) from public;
 grant execute on function public.get_public_availability(date, date) to anon, authenticated;
@@ -313,9 +316,9 @@ insert into public.units (slug, name, type, capacity_min, capacity_max, aircon, 
   ('aqua-blaire', 'Aqua Blaire', 'cottage', 2, 4, false, false, 500, null, '{"en":"Good for 2 to 4 guests."}', true, 60),
   ('open-cottage', 'Open Cottage', 'cottage', 3, 4, false, false, 500, null, '{"en":"Good for 3 to 4 guests."}', true, 70),
   ('umbrella-kubo', 'Umbrella Kubo', 'kubo', null, null, false, false, 150, null, '{}', true, 80),
-  ('room-1', 'Room 1', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 90),
-  ('room-2', 'Room 2', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 100),
-  ('room-3', 'Room 3', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 110)
+  ('room-1', 'Room 1', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', true, 90),
+  ('room-2', 'Room 2', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', true, 100),
+  ('room-3', 'Room 3', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', true, 110)
 on conflict (slug) do nothing;
 
 insert into storage.buckets (id, name, public)

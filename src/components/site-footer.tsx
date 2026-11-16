@@ -1,12 +1,14 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { FACEBOOK_URL, RESORT_PHONE, RESORT_PHONE_TEL } from "@/lib/site";
+import { FACEBOOK_URL, RESORT_PHONE_TEL } from "@/lib/site";
+import { getResortPhone } from "@/lib/public-settings";
 
 export async function SiteFooter() {
   const t = await getTranslations("footer");
   const nav = await getTranslations("navigation");
   const legal = await getTranslations("legal");
+  const resortPhone = await getResortPhone();
 
   return (
     <footer className="site-footer">
@@ -26,7 +28,7 @@ export async function SiteFooter() {
           <Link href="/contact">{nav("contact")}</Link>
         </nav>
         <div className="footer-contact">
-          <a href={`tel:${RESORT_PHONE_TEL}`}>{RESORT_PHONE}</a>
+          <a href={`tel:${resortPhone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}>{resortPhone}</a>
           <a href={FACEBOOK_URL} target="_blank" rel="noreferrer">{t("facebook")}</a>
         </div>
       </div>

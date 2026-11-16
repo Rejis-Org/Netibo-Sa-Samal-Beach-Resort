@@ -297,11 +297,11 @@ on conflict (key) do nothing;
 insert into public.packages (slug, name, scope, price_amount, pax_included, weekday_only, weekend_only, notes, sort_order) values
   ('exclusive-weekdays', '{"en":"Exclusive Weekdays","fil":"Eksklusibo tuwing weekday","ceb":"Eksklusibo sa weekday"}', 'exclusive', 10000, 20, true, false, '{"en":"Whole resort for up to 20 guests. Extra guest fee: TODO amount.","todo":"Confirm inclusions and extra guest fee."}', 10),
   ('exclusive-weekends', '{"en":"Exclusive Weekends","fil":"Eksklusibo tuwing weekend","ceb":"Eksklusibo sa weekend"}', 'exclusive', 12000, 20, false, true, '{"en":"Whole resort for up to 20 guests. Extra guest fee: TODO amount.","todo":"Confirm inclusions and extra guest fee."}', 20),
-  ('exclusive-six-aircon-rooms', '{"en":"Exclusive with 6 aircon rooms","fil":"Eksklusibo na may 6 aircon room","ceb":"Eksklusibo nga adunay 6 ka aircon room"}', 'exclusive', 13000, 20, false, false, '{"en":"Includes 6 aircon rooms and free entrance for 20 guests.","todo":"Confirm extra guest fee and full package inclusions."}', 30),
-  ('day-tour-adult', '{"en":"Day tour entrance Â· adult","fil":"Day tour entrance Â· adult","ceb":"Day tour entrance Â· adult"}', 'walk-in', 65, null, false, false, '{"en":"Per adult head."}', 40),
-  ('overnight-adult', '{"en":"Overnight entrance Â· adult","fil":"Overnight entrance Â· adult","ceb":"Overnight entrance Â· adult"}', 'walk-in', 85, null, false, false, '{"en":"Per adult head."}', 50),
-  ('day-tour-child-5-10', '{"en":"Day tour entrance Â· child age 5 to 10","fil":"Day tour entrance Â· batang 5 hanggang 10 taong gulang","ceb":"Day tour entrance Â· bata nga 5 hangtod 10 anyos"}', 'walk-in', 30, null, false, false, '{"en":"Per child age 5 to 10."}', 60),
-  ('overnight-child-5-10', '{"en":"Overnight entrance Â· child age 5 to 10","fil":"Overnight entrance Â· batang 5 hanggang 10 taong gulang","ceb":"Overnight entrance Â· bata nga 5 hangtod 10 anyos"}', 'walk-in', 50, null, false, false, '{"en":"Per child age 5 to 10."}', 70)
+  ('exclusive-six-aircon-rooms', '{"en":"Exclusive with 6 aircon rooms","fil":"Eksklusibo na may 6 aircon room","ceb":"Eksklusibo nga adunay 6 ka aircon room"}', 'exclusive', 13000, 20, false, false, '{"en":"Includes 6 aircon rooms and free entrance for 20 guests. The ad lists Rooms 1 to 3; TODO: confirm the other rooms.","todo":"Confirm extra guest fee and full package inclusions."}', 30),
+  ('day-tour-adult', '{"en":"Day tour entrance | adult","fil":"Day tour entrance | adult","ceb":"Day tour entrance | adult"}', 'walk-in', 65, null, false, false, '{"en":"Per adult head."}', 40),
+  ('overnight-adult', '{"en":"Overnight entrance | adult","fil":"Overnight entrance | adult","ceb":"Overnight entrance | adult"}', 'walk-in', 85, null, false, false, '{"en":"Per adult head."}', 50),
+  ('day-tour-child-5-10', '{"en":"Day tour entrance | child age 5 to 10","fil":"Day tour entrance | batang 5 hanggang 10 taong gulang","ceb":"Day tour entrance | bata nga 5 hangtod 10 anyos"}', 'walk-in', 30, null, false, false, '{"en":"Per child age 5 to 10."}', 60),
+  ('overnight-child-5-10', '{"en":"Overnight entrance | child age 5 to 10","fil":"Overnight entrance | batang 5 hanggang 10 taong gulang","ceb":"Overnight entrance | bata nga 5 hangtod 10 anyos"}', 'walk-in', 50, null, false, false, '{"en":"Per child age 5 to 10."}', 70)
 on conflict (slug) do nothing;
 
 insert into public.units (slug, name, type, capacity_min, capacity_max, aircon, has_own_cr, price_amount, price_note, description, active, sort_order) values
@@ -313,9 +313,9 @@ insert into public.units (slug, name, type, capacity_min, capacity_max, aircon, 
   ('aqua-blaire', 'Aqua Blaire', 'cottage', 2, 4, false, false, 500, null, '{"en":"Good for 2 to 4 guests."}', true, 60),
   ('open-cottage', 'Open Cottage', 'cottage', 3, 4, false, false, 500, null, '{"en":"Good for 3 to 4 guests."}', true, 70),
   ('umbrella-kubo', 'Umbrella Kubo', 'kubo', null, null, false, false, 150, null, '{}', true, 80),
-  ('aircon-room-1', 'Aircon Room 1', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 90),
-  ('aircon-room-2', 'Aircon Room 2', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 100),
-  ('aircon-room-3', 'Aircon Room 3', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 110)
+  ('room-1', 'Room 1', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 90),
+  ('room-2', 'Room 2', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 100),
+  ('room-3', 'Room 3', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 110)
 on conflict (slug) do nothing;
 
 insert into storage.buckets (id, name, public)

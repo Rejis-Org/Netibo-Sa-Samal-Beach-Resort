@@ -36,6 +36,8 @@ supabase/reset.sql is destructive. Running it deletes all Netibo app tables, row
 - src/app/[locale]/: localized public home and root layout
 - src/components/: shared page controls
 - src/i18n/: locale routing and request configuration
+- public/netibo-brand-from-ad.webp: header wordmark crop from the supplied Facebook ad; replace with the original logo file when available
+- public/facebook-price-list.webp: optimized copy of the supplied Facebook price list
 - messages/: English, Tagalog, Cebuano UI strings
 - supabase/schema.sql: one-shot app schema and seed data
 - supabase/reset.sql: destructive app-only reset

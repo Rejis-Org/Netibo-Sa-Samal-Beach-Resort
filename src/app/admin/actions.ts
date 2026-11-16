@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import type { Database, Json } from "@/lib/supabase/database.types";
 import { getAdminContext } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { randomBytes } from "node:crypto";
+import { expireUnpaidHolds } from "@/lib/booking-maintenance";
+import { sendBookingStatusEmail } from "@/lib/notifications";
 
 function readText(formData: FormData, name: string, max = 250) {
   const value = formData.get(name);
@@ -203,6 +206,7 @@ export async function updateBookingStatusAction(formData: FormData) {
   const action = readText(formData, "booking_action", 32);
   if (!id || !action || !["approve", "decline", "paid", "cancel", "complete"].includes(action)) redirect("/admin?error=booking#bookings");
 
+  await expireUnpaidHolds();
   const { data: oldRow, error: readError } = await admin.supabase.from("bookings").select("*").eq("id", id).maybeSingle();
   if (readError || !oldRow) redirect("/admin?error=booking#bookings");
   let status: "awaiting_payment" | "confirmed" | "cancelled" | "completed";
@@ -237,7 +241,118 @@ export async function updateBookingStatusAction(formData: FormData) {
   const { error } = await admin.supabase.from("bookings").update(update).eq("id", id);
   if (error) redirect(`/admin?error=${error.code === "23P01" ? "conflict" : "booking"}#bookings`);
   await logChange(admin.supabase, admin.userId, "bookings", id, oldRow as unknown as Json, update as unknown as Json);
+  await sendBookingStatusEmail(oldRow, status);
   revalidatePath("/admin");
   revalidatePath("/", "layout");
   redirect("/admin?saved=booking#bookings");
+}
+
+function validDateText(value: string | null): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) === value);
+}
+
+// Records a booking made by phone or Messenger so the public calendar stays accurate.
+export async function createManualBookingAction(formData: FormData) {
+  const admin = await getAdminContext();
+  if (!admin) redirect("/admin/login");
+
+  const kind = readText(formData, "kind", 20);
+  const date = readText(formData, "date", 10);
+  const guestName = readText(formData, "guest_name", 160);
+  const phone = readText(formData, "phone", 40);
+  const notes = readText(formData, "notes", 1000);
+  const packageId = readText(formData, "package_id", 64);
+  const unitId = readText(formData, "unit_id", 64);
+  const status = readText(formData, "status", 20);
+  const adults = readInteger(formData, "adults");
+  const children = readInteger(formData, "children");
+  const total = readInteger(formData, "total");
+  if (
+    (kind !== "exclusive" && kind !== "unit" && kind !== "entrance") || !validDateText(date) || !guestName || !phone || phone.length < 7 ||
+    notes === null || packageId === null || unitId === null || (status !== "confirmed" && status !== "pending") ||
+    typeof adults !== "number" || typeof children !== "number" || typeof total !== "number" ||
+    adults > 1000 || children > 1000 || adults + children < 1 || total > 100_000_000
+  ) {
+    redirect("/admin?error=manual#bookings");
+  }
+
+  let packageRef: string | null = null;
+  let unitIds: string[] = [];
+  if (kind === "exclusive") {
+    if (!packageId) redirect("/admin?error=manual#bookings");
+    const { data: item } = await admin.supabase.from("packages").select("id,scope").eq("id", packageId).maybeSingle();
+    if (!item || item.scope !== "exclusive") redirect("/admin?error=manual#bookings");
+    packageRef = item.id;
+  } else if (kind === "unit") {
+    if (!unitId) redirect("/admin?error=manual#bookings");
+    const { data: unit } = await admin.supabase.from("units").select("id").eq("id", unitId).maybeSingle();
+    if (!unit) redirect("/admin?error=manual#bookings");
+    unitIds = [unit.id];
+  }
+
+  await expireUnpaidHolds();
+  const record = {
+    ref_code: `NSM-${new Date().getFullYear()}-${randomBytes(3).toString("hex").toUpperCase()}`,
+    type: kind as "exclusive" | "unit" | "entrance",
+    package_id: packageRef,
+    unit_ids: unitIds,
+    date_start: date as string,
+    date_end: date as string,
+    adults: adults as number,
+    children: children as number,
+    guest_name: guestName as string,
+    phone: phone as string,
+    guest_email: null,
+    contact_extra: null,
+    notes: notes || null,
+    status: status as "confirmed" | "pending",
+    total_amount: total as number,
+    deposit_required: null,
+    payment_deadline: null,
+    hold_expires_at: null,
+    guest_uid: null,
+  };
+  const { data, error } = await admin.supabase.from("bookings").insert(record).select("id").single();
+  if (error || !data) redirect(`/admin?error=${error?.code === "23P01" ? "conflict" : "manual"}#bookings`);
+  await logChange(admin.supabase, admin.userId, "bookings", data.id, null, record as unknown as Json);
+  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin?saved=manual#bookings");
+}
+
+export async function addBlockedDateAction(formData: FormData) {
+  const admin = await getAdminContext();
+  if (!admin) redirect("/admin/login");
+
+  const date = readText(formData, "date", 10);
+  const reasonInput = readText(formData, "reason", 120);
+  if (!validDateText(date) || reasonInput === null) redirect("/admin?error=blocked#blocked-dates");
+  const reason = reasonInput || "closed";
+
+  const { data: clash } = await admin.supabase.from("bookings").select("id")
+    .lte("date_start", date).gte("date_end", date).in("status", ["awaiting_payment", "confirmed"]).limit(1);
+  if (clash && clash.length > 0) redirect("/admin?error=blockedConflict#blocked-dates");
+
+  const { data, error } = await admin.supabase.from("blocked_dates").insert({ date, reason, created_by: admin.userId }).select("id").single();
+  if (error || !data) redirect(`/admin?error=${error?.code === "23505" ? "blockedExists" : "blocked"}#blocked-dates`);
+  await logChange(admin.supabase, admin.userId, "blocked_dates", data.id, null, { date, reason });
+  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin?saved=blocked#blocked-dates");
+}
+
+export async function removeBlockedDateAction(formData: FormData) {
+  const admin = await getAdminContext();
+  if (!admin) redirect("/admin/login");
+
+  const id = readText(formData, "id", 64);
+  if (!id) redirect("/admin?error=blocked#blocked-dates");
+  const { data: oldRow } = await admin.supabase.from("blocked_dates").select("*").eq("id", id).maybeSingle();
+  if (!oldRow) redirect("/admin?error=blocked#blocked-dates");
+  const { error } = await admin.supabase.from("blocked_dates").delete().eq("id", id);
+  if (error) redirect("/admin?error=blocked#blocked-dates");
+  await logChange(admin.supabase, admin.userId, "blocked_dates", id, oldRow as unknown as Json, { removed: true });
+  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin?saved=blocked#blocked-dates");
 }

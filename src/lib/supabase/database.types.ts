@@ -58,6 +58,7 @@ export type Database = {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_owner: { Args: Record<PropertyKey, never>; Returns: boolean };
       get_public_availability: { Args: { from_date: string; through_date: string }; Returns: { day: string; state: string }[] };
+      expire_unpaid_holds: { Args: Record<PropertyKey, never>; Returns: number };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

@@ -71,12 +71,19 @@ export async function getPublicAvailability(start: string, end: string) {
   });
 }
 
+// All resort dates are Philippine dates, whatever time zone the server runs in.
+export function manilaToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+
+function addMonths(value: string, months: number) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1 + months, day, 12)).toISOString().slice(0, 10);
+}
+
 export function getAvailabilityWindow() {
-  const start = new Date();
-  start.setHours(12, 0, 0, 0);
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 12);
-  return { start: toDateInput(start), end: toDateInput(end) };
+  const start = manilaToday();
+  return { start, end: addMonths(start, 12) };
 }
 
 export function toDateInput(date: Date) {

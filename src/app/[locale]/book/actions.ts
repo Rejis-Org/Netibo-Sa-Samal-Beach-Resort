@@ -3,6 +3,9 @@
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getAvailabilityWindow } from "@/lib/booking-data";
+import { expireUnpaidHolds } from "@/lib/booking-maintenance";
+import { sendBookingReceivedEmail } from "@/lib/notifications";
 
 const locales = new Set(["en", "fil", "ceb"]);
 
@@ -39,13 +42,10 @@ export async function submitBookingRequest(form: FormData) {
   if (!(["exclusive", "unit", "entrance"] as const).includes(kind as "exclusive" | "unit" | "entrance") || !validDate(date) || !guestName || guestName.length > 160 || !/^\+?[0-9 ()-]{7,40}$/.test(phone) || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || !Number.isSafeInteger(adults) || adults < 0 || adults > 1000 || !Number.isSafeInteger(children) || children < 0 || children > 1000 || adults + children < 1) {
     fail(locale, "invalid");
   }
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const selected = new Date(`${date}T00:00:00Z`);
-  const latest = new Date(today);
-  latest.setUTCMonth(latest.getUTCMonth() + 12);
-  if (selected < today || selected > latest) fail(locale, "date");
+  const { start: today, end: latest } = getAvailabilityWindow();
+  if (date < today || date > latest) fail(locale, "date");
 
+  await expireUnpaidHolds();
   const supabase = createSupabaseServiceClient();
   const [{ data: settings }, { data: blocked }, { data: existing }] = await Promise.all([
     supabase.from("settings").select("key,value").in("key", ["extra_guest_fee"]),
@@ -114,8 +114,9 @@ export async function submitBookingRequest(form: FormData) {
     payment_deadline: null,
     hold_expires_at: null,
     guest_uid: null,
-  }).select("access_token").single();
+  }).select("access_token,ref_code,guest_name,guest_email").single();
   if (error || !booking) fail(locale, error?.code === "23P01" ? "unavailable" : "save");
+  await sendBookingReceivedEmail(booking, locale);
   const prefix = locale === "en" ? "" : `/${locale}`;
   redirect(`${prefix}/book/confirmation/${booking.access_token}`);
 }

@@ -1,5 +1,5 @@
 import type { Database, Json } from "@/lib/supabase/database.types";
-import { savePackageAction, saveSettingAction, saveUnitAction } from "./actions";
+import { addBlockedDateAction, createManualBookingAction, removeBlockedDateAction, savePackageAction, saveSettingAction, saveUnitAction } from "./actions";
 
 type Unit = Database["public"]["Tables"]["units"]["Row"];
 type Package = Database["public"]["Tables"]["packages"]["Row"];
@@ -100,6 +100,55 @@ export function SettingsEditor({ settings, owner }: { settings: Setting[]; owner
         </form>
       ))}
       {!owner && <p className="admin-help admin-field-wide">Only the owner account can change resort settings.</p>}
+    </div>
+  );
+}
+
+type BlockedDate = Database["public"]["Tables"]["blocked_dates"]["Row"];
+
+export function ManualBookingForm({ packages, units }: { packages: Package[]; units: Unit[] }) {
+  const exclusivePackages = packages.filter((item) => item.scope === "exclusive" && item.active);
+  return (
+    <details className="admin-edit-card">
+      <summary><span>Add a booking by hand</span><span>For phone and Messenger bookings</span></summary>
+      <form action={createManualBookingAction} className="admin-form admin-editor-form">
+        <label>What was booked<select name="kind" defaultValue="unit"><option value="unit">Cottage or room</option><option value="exclusive">Whole resort</option><option value="entrance">Entrance only</option></select></label>
+        <label>Whole-resort package<select name="package_id" defaultValue=""><option value="">Not a whole-resort booking</option>{exclusivePackages.map((item) => <option key={item.id} value={item.id}>{localized(item.name, "en") || item.slug}</option>)}</select></label>
+        <label>Cottage or room<select name="unit_id" defaultValue=""><option value="">Not a cottage or room booking</option>{units.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label>Date<input name="date" type="date" required /></label>
+        <label>Adults<input name="adults" type="number" min={0} max={1000} defaultValue={1} required /></label>
+        <label>Children ages 5–10<input name="children" type="number" min={0} max={1000} defaultValue={0} required /></label>
+        <label>Guest name<input name="guest_name" required maxLength={160} /></label>
+        <label>Phone<input name="phone" type="tel" required maxLength={40} /></label>
+        <label>Total (PHP, whole pesos)<input name="total" type="number" min={0} required /></label>
+        <label>Status<select name="status" defaultValue="confirmed"><option value="confirmed">Confirmed (blocks the date)</option><option value="pending">Pending (does not block)</option></select></label>
+        <label className="admin-field-wide">Notes<textarea name="notes" rows={2} maxLength={1000} /></label>
+        <button className="button button-blue admin-field-wide" type="submit">Save booking</button>
+      </form>
+    </details>
+  );
+}
+
+export function BlockedDatesPanel({ dates }: { dates: BlockedDate[] }) {
+  return (
+    <div className="admin-booking-list">
+      <form action={addBlockedDateAction} className="admin-form admin-editor-form">
+        <label>Date to close<input name="date" type="date" required /></label>
+        <label>Reason (optional)<input name="reason" maxLength={120} placeholder="For example, maintenance" /></label>
+        <button className="button button-blue admin-field-wide" type="submit">Close this date</button>
+      </form>
+      {dates.length === 0 && <p className="admin-empty-state">No closed dates.</p>}
+      {dates.map((item) => (
+        <article className="admin-booking-card" key={item.id}>
+          <div className="admin-booking-heading">
+            <div>
+              <h3>{new Intl.DateTimeFormat("en-PH", { dateStyle: "full", timeZone: "Asia/Manila" }).format(new Date(`${item.date}T12:00:00+08:00`))}</h3>
+              <p>{item.reason}</p>
+            </div>
+            <form action={removeBlockedDateAction}><input type="hidden" name="id" value={item.id} /><button className="button button-outline" type="submit">Reopen</button></form>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }

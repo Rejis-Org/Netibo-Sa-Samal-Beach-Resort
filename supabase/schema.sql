@@ -1,0 +1,330 @@
+-- Netibo sa Samal app schema. Run this whole file once in Supabase SQL Editor.
+-- Prices are stored as whole PHP pesos. Unknown prices remain NULL and inactive.
+begin;
+
+create table if not exists public.user_roles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null check (role in ('owner', 'staff')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id) on delete set null
+);
+
+create table if not exists public.units (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  type text not null check (type in ('cottage', 'room', 'hall', 'kubo')),
+  capacity_min integer check (capacity_min is null or capacity_min >= 0),
+  capacity_max integer check (capacity_max is null or capacity_max >= 0),
+  aircon boolean not null default false,
+  has_own_cr boolean not null default false,
+  price_amount integer check (price_amount is null or price_amount >= 0),
+  currency text not null default 'PHP' check (currency = 'PHP'),
+  price_note text,
+  description jsonb not null default '{}'::jsonb,
+  photos text[] not null default '{}',
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (capacity_min is null or capacity_max is null or capacity_min <= capacity_max)
+);
+
+create table if not exists public.packages (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name jsonb not null,
+  scope text not null check (scope in ('exclusive', 'walk-in')),
+  price_amount integer check (price_amount is null or price_amount >= 0),
+  currency text not null default 'PHP' check (currency = 'PHP'),
+  pax_included integer check (pax_included is null or pax_included >= 0),
+  weekday_only boolean not null default false,
+  weekend_only boolean not null default false,
+  notes jsonb not null default '{}'::jsonb,
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (not (weekday_only and weekend_only))
+);
+
+create table if not exists public.bookings (
+  id uuid primary key default gen_random_uuid(),
+  ref_code text not null unique,
+  type text not null check (type in ('exclusive', 'unit', 'entrance')),
+  package_id uuid references public.packages(id) on delete set null,
+  unit_ids uuid[] not null default '{}',
+  date_start date not null,
+  date_end date not null,
+  adults integer not null default 1 check (adults >= 0),
+  children integer not null default 0 check (children >= 0),
+  guest_name text not null,
+  phone text not null,
+  guest_email text,
+  contact_extra text,
+  notes text,
+  status text not null default 'pending' check (status in ('pending', 'awaiting_payment', 'confirmed', 'cancelled', 'completed')),
+  total_amount integer not null default 0 check (total_amount >= 0),
+  deposit_required integer check (deposit_required is null or deposit_required >= 0),
+  payment_deadline timestamptz,
+  hold_expires_at timestamptz,
+  access_token text not null unique check (length(access_token) >= 32),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (date_end >= date_start),
+  check (length(trim(guest_name)) between 1 and 160),
+  check (length(trim(phone)) between 7 and 40)
+);
+
+-- Approved exclusive dates are held while awaiting payment, then remain blocked when confirmed.
+alter table public.bookings drop constraint if exists bookings_exclusive_dates_no_overlap;
+alter table public.bookings add constraint bookings_exclusive_dates_no_overlap
+  exclude using gist (daterange(date_start, date_end, '[]') with &&)
+  where (type = 'exclusive' and status in ('awaiting_payment', 'confirmed'));
+
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references public.bookings(id) on delete cascade,
+  method text not null default 'gcash' check (method in ('gcash', 'bank_transfer', 'other')),
+  reference_no text,
+  proof_path text,
+  amount integer not null check (amount >= 0),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected')),
+  confirmed_by uuid references auth.users(id) on delete set null,
+  confirmed_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (reference_no is null or length(reference_no) <= 120)
+);
+
+create table if not exists public.blocked_dates (
+  id uuid primary key default gen_random_uuid(),
+  date date not null unique,
+  reason text not null default 'closed',
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  visitor_token text not null unique check (length(visitor_token) >= 32),
+  guest_name text,
+  contact text,
+  booking_id uuid references public.bookings(id) on delete set null,
+  status text not null default 'open' check (status in ('open', 'closed')),
+  last_message_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  sender text not null check (sender in ('guest', 'owner')),
+  body text not null check (length(trim(body)) between 1 and 3000),
+  delivered_at timestamptz,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.audit_log (
+  id bigint generated always as identity primary key,
+  actor_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  target_table text not null,
+  target_id text,
+  old_data jsonb,
+  new_data jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bookings_dates_status_idx on public.bookings (date_start, date_end, status);
+create index if not exists bookings_created_at_idx on public.bookings (created_at desc);
+create index if not exists payments_booking_created_idx on public.payments (booking_id, created_at desc);
+create index if not exists messages_conversation_created_idx on public.messages (conversation_id, created_at desc);
+create index if not exists conversations_last_message_idx on public.conversations (last_message_at desc);
+
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.user_roles
+    where user_id = (select auth.uid()) and role in ('owner', 'staff')
+  );
+$$;
+
+create or replace function public.is_owner()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.user_roles
+    where user_id = (select auth.uid()) and role = 'owner'
+  );
+$$;
+
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.guard_booking_availability()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.status in ('cancelled', 'completed') then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.blocked_dates d
+    where d.date between new.date_start and new.date_end
+  ) then
+    raise exception 'One or more selected dates are closed.' using errcode = '23P01';
+  end if;
+
+  if new.type <> 'exclusive' and exists (
+    select 1 from public.bookings b
+    where b.id <> new.id
+      and b.type = 'exclusive'
+      and b.status in ('awaiting_payment', 'confirmed')
+      and (b.hold_expires_at is null or b.hold_expires_at > now())
+      and daterange(b.date_start, b.date_end, '[]') && daterange(new.date_start, new.date_end, '[]')
+  ) then
+    raise exception 'An exclusive event already holds one or more selected dates.' using errcode = '23P01';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists units_touch_updated_at on public.units;
+create trigger units_touch_updated_at before update on public.units for each row execute function public.touch_updated_at();
+drop trigger if exists packages_touch_updated_at on public.packages;
+create trigger packages_touch_updated_at before update on public.packages for each row execute function public.touch_updated_at();
+drop trigger if exists settings_touch_updated_at on public.settings;
+create trigger settings_touch_updated_at before update on public.settings for each row execute function public.touch_updated_at();
+drop trigger if exists bookings_touch_updated_at on public.bookings;
+create trigger bookings_touch_updated_at before update on public.bookings for each row execute function public.touch_updated_at();
+drop trigger if exists bookings_guard_availability on public.bookings;
+create trigger bookings_guard_availability before insert or update of type, status, date_start, date_end on public.bookings for each row execute function public.guard_booking_availability();
+
+create or replace function public.get_public_availability(from_date date, through_date date)
+returns table (date date, reason text)
+language sql stable security definer set search_path = '' as $$
+  select d.date, 'closed'::text
+  from public.blocked_dates d
+  where d.date between from_date and through_date
+  union
+  select day::date, 'exclusive_event'::text
+  from public.bookings b
+  cross join lateral generate_series(b.date_start::timestamp, b.date_end::timestamp, interval '1 day') as day
+  where b.type = 'exclusive'
+    and b.status in ('awaiting_payment', 'confirmed')
+    and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+    and day::date between from_date and through_date;
+$$;
+
+alter table public.user_roles enable row level security;
+alter table public.settings enable row level security;
+alter table public.units enable row level security;
+alter table public.packages enable row level security;
+alter table public.bookings enable row level security;
+alter table public.payments enable row level security;
+alter table public.blocked_dates enable row level security;
+alter table public.conversations enable row level security;
+alter table public.messages enable row level security;
+alter table public.audit_log enable row level security;
+
+drop policy if exists "roles read self or admin" on public.user_roles;
+create policy "roles read self or admin" on public.user_roles for select to authenticated using (user_id = (select auth.uid()) or (select public.is_admin()));
+drop policy if exists "owner manages roles" on public.user_roles;
+create policy "owner manages roles" on public.user_roles for all to authenticated using ((select public.is_owner())) with check ((select public.is_owner()));
+
+drop policy if exists "active units are public" on public.units;
+create policy "active units are public" on public.units for select to anon, authenticated using (active or (select public.is_admin()));
+drop policy if exists "admins manage units" on public.units;
+create policy "admins manage units" on public.units for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "active packages are public" on public.packages;
+create policy "active packages are public" on public.packages for select to anon, authenticated using (active or (select public.is_admin()));
+drop policy if exists "admins manage packages" on public.packages;
+create policy "admins manage packages" on public.packages for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+
+drop policy if exists "owner manages settings" on public.settings;
+create policy "owner manages settings" on public.settings for all to authenticated using ((select public.is_owner())) with check ((select public.is_owner()));
+drop policy if exists "admins manage bookings" on public.bookings;
+create policy "admins manage bookings" on public.bookings for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins manage payments" on public.payments;
+create policy "admins manage payments" on public.payments for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins manage blocked dates" on public.blocked_dates;
+create policy "admins manage blocked dates" on public.blocked_dates for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins manage conversations" on public.conversations;
+create policy "admins manage conversations" on public.conversations for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins manage messages" on public.messages;
+create policy "admins manage messages" on public.messages for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins read audit log" on public.audit_log;
+create policy "admins read audit log" on public.audit_log for select to authenticated using ((select public.is_admin()));
+drop policy if exists "admins add audit log" on public.audit_log;
+create policy "admins add audit log" on public.audit_log for insert to authenticated with check ((select public.is_admin()));
+
+grant select on public.units, public.packages to anon, authenticated;
+grant select, insert, update, delete on public.user_roles, public.settings, public.units, public.packages, public.bookings, public.payments, public.blocked_dates, public.conversations, public.messages, public.audit_log to authenticated;
+revoke all on function public.get_public_availability(date, date) from public;
+grant execute on function public.get_public_availability(date, date) to anon, authenticated;
+revoke all on function public.is_admin() from public;
+revoke all on function public.is_owner() from public;
+grant execute on function public.is_admin(), public.is_owner() to anon, authenticated;
+
+insert into public.settings (key, value) values
+  ('contact_phone', '"0927 485 2412"'::jsonb),
+  ('gcash_number', 'null'::jsonb),
+  ('gcash_account_name', 'null'::jsonb),
+  ('deposit_amount', 'null'::jsonb),
+  ('deposit_percent', 'null'::jsonb),
+  ('payment_deadline_hours', 'null'::jsonb),
+  ('extra_guest_fee', 'null'::jsonb),
+  ('reply_time_hours', 'null'::jsonb),
+  ('day_tour_start', '"08:00"'::jsonb),
+  ('overnight_start', '"16:00"'::jsonb),
+  ('cancellation_refund_policy', 'null'::jsonb),
+  ('arrival_directions', 'null'::jsonb)
+on conflict (key) do nothing;
+
+-- TODO: Have a native speaker review all machine-drafted fil/ceb labels before launch.
+insert into public.packages (slug, name, scope, price_amount, pax_included, weekday_only, weekend_only, notes, sort_order) values
+  ('exclusive-weekdays', '{"en":"Exclusive Weekdays","fil":"Eksklusibo tuwing weekday","ceb":"Eksklusibo sa weekday"}', 'exclusive', 10000, 20, true, false, '{"en":"Whole resort for up to 20 guests. Extra guest fee: TODO amount.","todo":"Confirm inclusions and extra guest fee."}', 10),
+  ('exclusive-weekends', '{"en":"Exclusive Weekends","fil":"Eksklusibo tuwing weekend","ceb":"Eksklusibo sa weekend"}', 'exclusive', 12000, 20, false, true, '{"en":"Whole resort for up to 20 guests. Extra guest fee: TODO amount.","todo":"Confirm inclusions and extra guest fee."}', 20),
+  ('exclusive-six-aircon-rooms', '{"en":"Exclusive with 6 aircon rooms","fil":"Eksklusibo na may 6 aircon room","ceb":"Eksklusibo nga adunay 6 ka aircon room"}', 'exclusive', 13000, 20, false, false, '{"en":"Includes 6 aircon rooms and free entrance for 20 guests.","todo":"Confirm extra guest fee and full package inclusions."}', 30),
+  ('day-tour-adult', '{"en":"Day tour entrance Â· adult","fil":"Day tour entrance Â· adult","ceb":"Day tour entrance Â· adult"}', 'walk-in', 65, null, false, false, '{"en":"Per adult head."}', 40),
+  ('overnight-adult', '{"en":"Overnight entrance Â· adult","fil":"Overnight entrance Â· adult","ceb":"Overnight entrance Â· adult"}', 'walk-in', 85, null, false, false, '{"en":"Per adult head."}', 50),
+  ('day-tour-child-5-10', '{"en":"Day tour entrance Â· child age 5 to 10","fil":"Day tour entrance Â· batang 5 hanggang 10 taong gulang","ceb":"Day tour entrance Â· bata nga 5 hangtod 10 anyos"}', 'walk-in', 30, null, false, false, '{"en":"Per child age 5 to 10."}', 60),
+  ('overnight-child-5-10', '{"en":"Overnight entrance Â· child age 5 to 10","fil":"Overnight entrance Â· batang 5 hanggang 10 taong gulang","ceb":"Overnight entrance Â· bata nga 5 hangtod 10 anyos"}', 'walk-in', 50, null, false, false, '{"en":"Per child age 5 to 10."}', 70)
+on conflict (slug) do nothing;
+
+insert into public.units (slug, name, type, capacity_min, capacity_max, aircon, has_own_cr, price_amount, price_note, description, active, sort_order) values
+  ('casa-liam', 'Casa Liam', 'cottage', 6, 8, false, false, 2500, null, '{"en":"Good for 6 to 8 guests."}', true, 10),
+  ('villa-aryanna', 'Villa Aryanna', 'cottage', 6, 6, false, false, 2300, null, '{"en":"Good for 6 guests."}', true, 20),
+  ('mapitag-function-hall', 'Mapitag Function Hall', 'hall', null, null, false, false, 2500, null, '{}', true, 30),
+  ('alexa', 'Alexa', 'room', 2, 2, false, false, 1500, null, '{"en":"Good for 2 guests."}', true, 40),
+  ('cabins-adrean', 'Cabins Adrean', 'room', 2, 2, false, false, 1500, null, '{"en":"Good for 2 guests."}', true, 50),
+  ('aqua-blaire', 'Aqua Blaire', 'cottage', 2, 4, false, false, 500, null, '{"en":"Good for 2 to 4 guests."}', true, 60),
+  ('open-cottage', 'Open Cottage', 'cottage', 3, 4, false, false, 500, null, '{"en":"Good for 3 to 4 guests."}', true, 70),
+  ('umbrella-kubo', 'Umbrella Kubo', 'kubo', null, null, false, false, 150, null, '{}', true, 80),
+  ('aircon-room-1', 'Aircon Room 1', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 90),
+  ('aircon-room-2', 'Aircon Room 2', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 100),
+  ('aircon-room-3', 'Aircon Room 3', 'room', 2, 2, true, true, null, 'TODO: Price outside the 6-room exclusive package is unconfirmed.', '{"en":"Aircon room for 2 with own CR."}', false, 110)
+on conflict (slug) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('payment-proofs', 'payment-proofs', false)
+on conflict (id) do nothing;
+
+drop policy if exists "admins read payment proofs" on storage.objects;
+create policy "admins read payment proofs" on storage.objects for select to authenticated using (bucket_id = 'payment-proofs' and (select public.is_admin()));
+drop policy if exists "admins manage payment proofs" on storage.objects;
+create policy "admins manage payment proofs" on storage.objects for all to authenticated using (bucket_id = 'payment-proofs' and (select public.is_admin())) with check (bucket_id = 'payment-proofs' and (select public.is_admin()));
+
+commit;

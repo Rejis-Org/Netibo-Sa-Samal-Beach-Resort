@@ -3,6 +3,14 @@ const messages = {
   navigation: { label: "Pangunahing menu", packages: "Mga package", stay: "Mga cottage at kuwarto", schedule: "Availability", findUs: "Paano pumunta", store: "Tindahan at bar", contact: "Kontak" },
   actions: { book: "Mag-book ngayon", explore: "Tingnan", chat: "Makipag-chat sa amin", language: "Pumili ng wika", openMenu: "Buksan ang menu", closeMenu: "Isara ang menu", quickActions: "Mabilis na aksyon", previousSlide: "Naunang slide", nextSlide: "Susunod na slide", chooseSlide: "Pumili ng slide", showSlide: "Ipakita ang slide" },
   common: { skipToContent: "Lumaktaw sa pangunahing nilalaman", homeLabel: "Home ng Netibo sa Samal" },
+  chat: {
+    eyebrow: "Netibo sa Samal", title: "Makipag-chat sa resort", open: "Chat", close: "Isara ang chat", online: "Live na suporta", connecting: "Kumokonekta…",
+    name: "Pangalan (opsyonal)", contact: "Telepono o email (opsyonal)", intro: "Magpadala ng mensahe at sasagot ang aming team dito. Lalabas sa usapang ito ang mga booking request mula sa browser na ito.",
+    messagePlaceholder: "Magsulat ng mensahe…", send: "Ipadala", sending: "Ipinapadala…", sent: "Naipadala", seen: "Nakita", retry: "Subukan ulit",
+    unavailable: "Hindi muna available ang chat.", connectionError: "Hindi makakonekta sa chat. Subukan ulit.", realtimeError: "Naputol ang live update. Buksan muli ang chat para kumonekta.",
+    sendError: "Hindi naipadala ang mensahe. Subukan ulit.", bookingRequest: "Booking request", reference: "Reference", guest: "Bisita", bookingType: "Booking",
+    date: "Petsa", guests: "Mga bisita", adults: "matatanda", children: "bata", total: "Tinatayang kabuuan (PHP)", phone: "Telepono", email: "Email", notes: "Mga tala",
+  },
   home: {
     eyebrow: "Netibo sa Samal Beach Resort", carouselLabel: "Mga tampok ng resort", carouselRole: "carousel", carouselControls: "Mga kontrol ng carousel", photoPlaceholder: "Idadagdag ang larawan ng resort",
     slideOneTitle: "Dito nagsisimula ang araw sa tabing-dagat.", slideOneText: "Tingnan ang kasalukuyang listahan ng presyo at piliin kung paano magpapalipas ng araw sa tabi ng dagat.", slideOneAction: "Tingnan ang mga package", slideOneAlt: "Kasalukuyang listahan ng presyo ng Netibo sa Samal mula sa Facebook",

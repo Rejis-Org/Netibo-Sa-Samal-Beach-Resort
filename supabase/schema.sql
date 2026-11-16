@@ -135,11 +135,21 @@ create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references public.conversations(id) on delete cascade,
   sender text not null check (sender in ('guest', 'owner')),
+  message_type text not null default 'text' check (message_type in ('text', 'booking')),
+  booking_id uuid references public.bookings(id) on delete set null,
+  booking_details jsonb,
   body text not null check (length(trim(body)) between 1 and 3000),
   delivered_at timestamptz,
   read_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+alter table public.messages add column if not exists message_type text not null default 'text';
+alter table public.messages add column if not exists booking_id uuid references public.bookings(id) on delete set null;
+alter table public.messages add column if not exists booking_details jsonb;
+alter table public.messages drop constraint if exists messages_message_type_check;
+alter table public.messages add constraint messages_message_type_check check (message_type in ('text', 'booking'));
+create unique index if not exists messages_one_booking_event on public.messages (booking_id) where booking_id is not null;
 
 -- Keep message labels aligned with the owner/staff admin roles.
 alter table public.messages drop constraint if exists messages_sender_check;
@@ -160,6 +170,7 @@ create table if not exists public.audit_log (
 -- Keep guests tied to their hidden anonymous Auth user; admin accounts remain owner/staff.
 alter table public.bookings add column if not exists guest_uid uuid references auth.users(id) on delete set null default auth.uid();
 alter table public.conversations add column if not exists guest_uid uuid references auth.users(id) on delete set null default auth.uid();
+create unique index if not exists conversations_one_per_guest on public.conversations (guest_uid) where guest_uid is not null;
 alter table public.bookings alter column access_token set default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
 alter table public.conversations alter column visitor_token set default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
 
@@ -289,6 +300,97 @@ begin
 end;
 $$;
 
+create or replace function public.get_or_create_guest_conversation(p_guest_name text default null, p_contact text default null)
+returns setof public.conversations
+language plpgsql security definer set search_path = '' as $$
+declare
+  guest_id uuid := auth.uid();
+  guest_name_value text := nullif(left(trim(coalesce(p_guest_name, '')), 160), '');
+  contact_value text := nullif(left(trim(coalesce(p_contact, '')), 120), '');
+  result public.conversations;
+begin
+  if guest_id is null then
+    raise exception 'Sign in anonymously before starting a chat.';
+  end if;
+
+  insert into public.conversations (guest_uid, guest_name, contact)
+  values (guest_id, guest_name_value, contact_value)
+  on conflict (guest_uid) where guest_uid is not null
+  do update set
+    guest_name = coalesce(excluded.guest_name, conversations.guest_name),
+    contact = coalesce(excluded.contact, conversations.contact)
+  returning * into result;
+
+  return next result;
+end;
+$$;
+
+create or replace function public.add_booking_to_guest_chat()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  conversation_id uuid;
+  package_name text;
+  unit_names text;
+begin
+  if new.guest_uid is null then
+    return new;
+  end if;
+
+  if new.package_id is not null then
+    select p.name ->> 'en' into package_name
+    from public.packages p
+    where p.id = new.package_id;
+  end if;
+
+  if cardinality(new.unit_ids) > 0 then
+    select string_agg(u.name, ', ' order by u.name) into unit_names
+    from public.units u
+    where u.id = any(new.unit_ids);
+  end if;
+
+  insert into public.conversations (guest_uid, guest_name, contact, booking_id)
+  values (new.guest_uid, new.guest_name, new.phone, new.id)
+  on conflict (guest_uid) where guest_uid is not null
+  do update set
+    guest_name = excluded.guest_name,
+    contact = excluded.contact,
+    booking_id = excluded.booking_id,
+    status = 'open'
+  returning id into conversation_id;
+
+  insert into public.messages (conversation_id, sender, message_type, booking_id, booking_details, body)
+  values (
+    conversation_id,
+    'guest',
+    'booking',
+    new.id,
+    jsonb_build_object(
+      'ref_code', new.ref_code,
+      'guest_name', new.guest_name,
+      'phone', new.phone,
+      'guest_email', new.guest_email,
+      'type', new.type,
+      'date_start', new.date_start,
+      'date_end', new.date_end,
+      'adults', new.adults,
+      'children', new.children,
+      'total_amount', new.total_amount,
+      'package_name', package_name,
+      'unit_names', unit_names,
+      'notes', new.notes
+    ),
+    'Booking request ' || new.ref_code
+  );
+
+  return new;
+end;
+$$;
+revoke all on function public.add_booking_to_guest_chat() from public, anon, authenticated;
+
+drop trigger if exists bookings_add_to_guest_chat on public.bookings;
+create trigger bookings_add_to_guest_chat after insert on public.bookings
+  for each row execute function public.add_booking_to_guest_chat();
+
 create or replace function public.expire_unpaid_holds()
 returns integer language plpgsql security definer set search_path = '' as $$
 declare
@@ -397,6 +499,11 @@ create policy "guests read own messages" on public.messages for select to authen
 drop policy if exists "guests send messages" on public.messages;
 create policy "guests send messages" on public.messages for insert to authenticated with check (
   sender = 'guest'
+  and message_type = 'text'
+  and booking_id is null
+  and booking_details is null
+  and delivered_at is null
+  and read_at is null
   and exists (
     select 1 from public.conversations c
     where c.id = conversation_id and c.guest_uid = (select auth.uid())
@@ -416,6 +523,8 @@ revoke all on function public.get_public_availability(date, date) from public;
 grant execute on function public.get_public_availability(date, date) to anon, authenticated;
 revoke all on function public.mark_messages_read(uuid) from public;
 grant execute on function public.mark_messages_read(uuid) to authenticated;
+revoke all on function public.get_or_create_guest_conversation(text, text) from public;
+grant execute on function public.get_or_create_guest_conversation(text, text) to authenticated;
 revoke all on function public.expire_unpaid_holds() from public;
 grant execute on function public.expire_unpaid_holds() to service_role;
 revoke all on function public.is_admin() from public;

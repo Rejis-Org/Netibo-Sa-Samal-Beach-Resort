@@ -5,6 +5,7 @@ import { getAdminContext } from "@/lib/supabase/admin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { logoutAction, updateBookingStatusAction } from "./actions";
 import { BlockedDatesPanel, ManualBookingForm, PackageEditor, SettingsEditor, UnitEditor } from "./editor-forms";
+import { AdminChatInbox } from "./chat-inbox";
 import { manilaToday } from "@/lib/booking-data";
 import { expireUnpaidHolds } from "@/lib/booking-maintenance";
 
@@ -68,7 +69,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="admin-account"><span>{admin.email} · {admin.role}</span><form action={logoutAction}><button className="admin-text-button" type="submit">Sign out</button></form></div>
       </header>
       <nav className="admin-nav" aria-label="Admin sections">
-        <a href="#bookings">Bookings</a><a href="#blocked-dates">Closed dates</a><a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
+        <a href="#chats">Chats</a><a href="#bookings">Bookings</a><a href="#blocked-dates">Closed dates</a><a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
         <Link href="/">View public site ↗</Link>
       </nav>
       <section className="admin-summary-grid" aria-label="Resort overview">
@@ -80,6 +81,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       {saved && <p className="admin-message admin-message-success">Changes saved. The public pages now show the latest catalog.</p>}
       {error && <p className="admin-message admin-message-error">{errorMessages[error] ?? "Something went wrong. Try again or check the database connection."}</p>}
       {loadFailed && <p className="admin-message admin-message-error">Could not load resort data. Confirm that `supabase/schema.sql` has been run in this project.</p>}
+
+      <section id="chats" className="admin-section">
+        <div className="admin-section-heading"><div><p className="eyebrow">Guest support</p><h2>Live chats</h2></div><p>Reply to website visitors in real time. Open a conversation to mark guest messages as seen.</p></div>
+        <AdminChatInbox />
+      </section>
 
       <section id="bookings" className="admin-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Guest requests</p><h2>Bookings</h2></div><p>Approve a request to start its configured payment deadline. A date is not held while a request is pending.</p></div>

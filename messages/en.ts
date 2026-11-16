@@ -6,6 +6,14 @@ const messages = {
     book: "Book now", explore: "Explore", chat: "Chat with us", language: "Choose language", openMenu: "Open menu", closeMenu: "Close menu", quickActions: "Quick actions", previousSlide: "Previous slide", nextSlide: "Next slide", chooseSlide: "Choose a slide", showSlide: "Show slide",
   },
   common: { skipToContent: "Skip to main content", homeLabel: "Netibo sa Samal home" },
+  chat: {
+    eyebrow: "Netibo sa Samal", title: "Chat with the resort", open: "Chat", close: "Close chat", online: "Live support", connecting: "Connecting…",
+    name: "Your name (optional)", contact: "Phone or email (optional)", intro: "Send us a message and our team will reply here. Booking requests from this browser will appear in this conversation.",
+    messagePlaceholder: "Write a message…", send: "Send", sending: "Sending…", sent: "Sent", seen: "Seen", retry: "Try again",
+    unavailable: "Chat is unavailable right now.", connectionError: "Could not connect to chat. Please try again.", realtimeError: "Live updates disconnected. Reopen chat to reconnect.",
+    sendError: "Your message could not be sent. Please try again.", bookingRequest: "Booking request", reference: "Reference", guest: "Guest", bookingType: "Booking",
+    date: "Date", guests: "Guests", adults: "adults", children: "children", total: "Estimated total (PHP)", phone: "Phone", email: "Email", notes: "Notes",
+  },
   home: {
     eyebrow: "Netibo sa Samal Beach Resort", carouselLabel: "Resort highlights", carouselRole: "carousel", carouselControls: "Carousel controls", photoPlaceholder: "Resort photo coming soon",
     slideOneTitle: "Your beach day starts here.", slideOneText: "Weekend vibes are better by the beach! Relax, unwind, and create beautiful memories with family and friends.", slideOneAction: "See packages", slideOneAlt: "Current Netibo sa Samal price list from Facebook",

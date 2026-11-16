@@ -22,6 +22,15 @@ type Package = {
 
 type Setting = { key: string; value: Json; updated_at: string; updated_by: string | null };
 type UserRole = { user_id: string; role: "owner" | "staff"; created_at: string };
+type Conversation = {
+  id: string; visitor_token: string; guest_uid: string | null; guest_name: string | null; contact: string | null;
+  booking_id: string | null; status: "open" | "closed"; last_message_at: string; created_at: string;
+};
+type Message = {
+  id: string; conversation_id: string; sender: "guest" | "owner"; message_type: "text" | "booking";
+  booking_id: string | null; booking_details: Json | null; body: string; delivered_at: string | null;
+  read_at: string | null; created_at: string;
+};
 type Booking = {
   id: string; ref_code: string; type: "exclusive" | "unit" | "entrance"; package_id: string | null;
   unit_ids: string[]; date_start: string; date_end: string; adults: number; children: number;
@@ -44,6 +53,13 @@ export type Database = {
       bookings: Table<Booking, Omit<Booking, "id" | "created_at" | "updated_at" | "access_token"> & {
         id?: string; created_at?: string; updated_at?: string; access_token?: string;
       }, Partial<Booking>>;
+      conversations: Table<Conversation, Omit<Conversation, "id" | "visitor_token" | "created_at" | "last_message_at"> & {
+        id?: string; visitor_token?: string; created_at?: string; last_message_at?: string;
+      }, Partial<Conversation>>;
+      messages: Table<Message, Omit<Message, "id" | "created_at" | "delivered_at" | "read_at" | "booking_id" | "booking_details"> & {
+        id?: string; created_at?: string; delivered_at?: string | null; read_at?: string | null;
+        booking_id?: string | null; booking_details?: Json | null;
+      }, Partial<Message>>;
       blocked_dates: Table<BlockedDate, Omit<BlockedDate, "id" | "created_at"> & { id?: string; created_at?: string }, Partial<BlockedDate>>;
       audit_log: Table<{
         id: number; actor_id: string | null; action: string; target_table: string; target_id: string | null;
@@ -58,6 +74,8 @@ export type Database = {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_owner: { Args: Record<PropertyKey, never>; Returns: boolean };
       get_public_availability: { Args: { from_date: string; through_date: string }; Returns: { day: string; state: string }[] };
+      get_or_create_guest_conversation: { Args: { p_guest_name?: string | null; p_contact?: string | null }; Returns: Conversation[] };
+      mark_messages_read: { Args: { p_conversation_id: string }; Returns: undefined };
       expire_unpaid_holds: { Args: Record<PropertyKey, never>; Returns: number };
     };
     Enums: Record<never, never>;

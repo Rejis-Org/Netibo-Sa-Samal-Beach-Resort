@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvailabilityWindow } from "@/lib/booking-data";
 import { expireUnpaidHolds } from "@/lib/booking-maintenance";
 import { sendBookingReceivedEmail } from "@/lib/notifications";
@@ -94,6 +95,13 @@ export async function submitBookingRequest(form: FormData) {
   }
 
   const refCode = `NSM-${new Date().getFullYear()}-${randomBytes(3).toString("hex").toUpperCase()}`;
+  const authClient = await createSupabaseServerClient();
+  let { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    const { data, error: authError } = await authClient.auth.signInAnonymously();
+    if (authError || !data.user) fail(locale, "save");
+    user = data.user;
+  }
   const { data: booking, error } = await supabase.from("bookings").insert({
     ref_code: refCode,
     type: kind as "exclusive" | "unit" | "entrance",
@@ -113,7 +121,7 @@ export async function submitBookingRequest(form: FormData) {
     deposit_required: null,
     payment_deadline: null,
     hold_expires_at: null,
-    guest_uid: null,
+    guest_uid: user.id,
   }).select("access_token,ref_code,guest_name,guest_email").single();
   if (error || !booking) fail(locale, error?.code === "23P01" ? "unavailable" : "save");
   await sendBookingReceivedEmail(booking, locale);

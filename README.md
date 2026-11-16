@@ -28,7 +28,7 @@ on conflict (user_id) do update set role = 'owner';
 
 5. From **Project Settings → API**, copy the Project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Restart the local server.
 6. Visit `/admin/login` and sign in with the account created above. The owner can edit units, packages, prices, and settings. Staff can edit units and packages.
-7. Chat uses Supabase Realtime for `messages` and `conversations`; the publication is prepared by `schema.sql`. Guest chat will use anonymous Auth and guests will not need a visible login screen. Enable anonymous sign-ins before the chat milestone is activated.
+7. Enable **Authentication → Sign In / Providers → Anonymous Sign-Ins**. The public chat uses Supabase Anonymous Auth (no visible login), one persistent conversation per browser identity, and Supabase Realtime for messages and read receipts. Booking requests submitted from that browser are added to the same conversation. Staff can reply from **Chats** in `/admin`. If the app database is already set up, run the updated `supabase/schema.sql` to apply the chat changes; do not run the destructive reset.
 8. In `/admin` → **Resort settings**, set the payment deadline before approving booking requests. Approval creates an `awaiting_payment` hold until that deadline. Set the deposit and extra-guest fee only after the owner confirms those amounts. Unpaid holds are cancelled automatically whenever a guest submits a request or the admin page loads (`src/lib/booking-maintenance.ts`); no scheduled job is needed for now.
 9. Use `/admin` → **Add a booking by hand** to record phone and Messenger bookings, and **Closed dates** to block days. Both appear on the public calendar.
 

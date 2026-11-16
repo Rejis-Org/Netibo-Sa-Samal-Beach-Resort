@@ -44,6 +44,8 @@ drop table if exists public.user_roles cascade;
 
 drop function if exists public.get_public_availability(date, date);
 drop function if exists public.mark_messages_read(uuid);
+drop function if exists public.get_or_create_guest_conversation(text, text);
+drop function if exists public.add_booking_to_guest_chat();
 drop function if exists public.expire_unpaid_holds();
 drop function if exists public.touch_conversation();
 drop function if exists public.guard_booking_availability();

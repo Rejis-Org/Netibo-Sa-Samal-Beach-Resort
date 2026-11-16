@@ -3,6 +3,14 @@ const messages = {
   navigation: { label: "Pangunang menu", packages: "Mga package", stay: "Mga cottage ug kwarto", schedule: "Availability", findUs: "Asa kami", store: "Tindahan ug bar", contact: "Kontak" },
   actions: { book: "Pag-book karon", explore: "Tan-awa", chat: "Pakig-chat kanamo", language: "Pilia ang pinulongan", openMenu: "Ablihi ang menu", closeMenu: "Siradohi ang menu", quickActions: "Paspas nga mga aksyon", previousSlide: "Niaging slide", nextSlide: "Sunod nga slide", chooseSlide: "Pilia ang slide", showSlide: "Ipakita ang slide" },
   common: { skipToContent: "Laktawi ang pangunang sulod", homeLabel: "Home sa Netibo sa Samal" },
+  chat: {
+    eyebrow: "Netibo sa Samal", title: "Pakig-chat sa resort", open: "Chat", close: "Sirad-i ang chat", online: "Live nga suporta", connecting: "Nagkonektar…",
+    name: "Imong ngalan (opsyonal)", contact: "Telepono o email (opsyonal)", intro: "Pagpadala og mensahe ug motubag ang among team dinhi. Ang mga booking request gikan niining browser makita sa samang panag-istorya.",
+    messagePlaceholder: "Pagsulat og mensahe…", send: "Ipadala", sending: "Nagpadala…", sent: "Naipadala", seen: "Nakita", retry: "Sulayi pag-usab",
+    unavailable: "Dili pa magamit ang chat.", connectionError: "Dili makakonektar sa chat. Sulayi pag-usab.", realtimeError: "Naputol ang live update. Ablihi pag-usab ang chat aron magkonektar.",
+    sendError: "Wala maipadala ang imong mensahe. Sulayi pag-usab.", bookingRequest: "Booking request", reference: "Reference", guest: "Bisita", bookingType: "Booking",
+    date: "Petsa", guests: "Mga bisita", adults: "hamtong", children: "bata", total: "Gibanabanang total (PHP)", phone: "Telepono", email: "Email", notes: "Mga nota",
+  },
   home: {
     eyebrow: "Netibo sa Samal Beach Resort", carouselLabel: "Mga pahinungod sa resort", carouselRole: "carousel", carouselControls: "Mga kontrol sa carousel", photoPlaceholder: "Idugang pa ang hulagway sa resort",
     slideOneTitle: "Dinhi magsugod ang adlaw sa baybayon.", slideOneText: "Tan-awa ang kasamtangang listahan sa presyo ug pilia unsaon paggahin sa adlaw daplin sa dagat.", slideOneAction: "Tan-awa ang mga package", slideOneAlt: "Kasamtangang listahan sa presyo sa Netibo sa Samal gikan sa Facebook",

@@ -7,6 +7,7 @@ import { MotionProvider } from "@/components/motion-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileActionBar } from "@/components/mobile-action-bar";
+import { SiteChat } from "@/components/site-chat";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
@@ -52,6 +53,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <main id="main">{children}</main>
             <SiteFooter />
             <MobileActionBar />
+            <SiteChat />
           </MotionProvider>
         </NextIntlClientProvider>
       </body>

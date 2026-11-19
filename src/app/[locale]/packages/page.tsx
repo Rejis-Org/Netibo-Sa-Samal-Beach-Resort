@@ -4,8 +4,8 @@ import { PageIntro } from "@/components/page-intro";
 import { ResortCatalog } from "@/components/price-list-card";
 
 export const metadata: Metadata = {
-  title: "Packages and prices",
-  description: "See the Netibo sa Samal price list and package details.",
+  title: "Exclusive packages",
+  description: "See the Netibo sa Samal exclusive package details.",
 };
 
 export default async function PackagesPage() {
@@ -14,7 +14,6 @@ export default async function PackagesPage() {
     <section className="page-section page-container">
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <ResortCatalog mode="packages" />
-      <p className="page-note">{t("livePricesNote")}</p>
     </section>
   );
 }

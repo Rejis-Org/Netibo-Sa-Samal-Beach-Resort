@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { Link } from "@/i18n/navigation";
+import { CheckIcon } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Booking request received", robots: { index: false, follow: false } };
 
@@ -18,7 +19,7 @@ export default async function BookingConfirmationPage({ params }: Props) {
   const date = new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" }).format(new Date(`${data.date_start}T12:00:00+08:00`));
   return <section className="page-section page-container">
     <article className="booking-confirmation">
-      <span className="confirmation-icon" aria-hidden="true">✓</span>
+      <span className="confirmation-icon" aria-hidden="true"><CheckIcon size={28} strokeWidth={2.75} /></span>
       <p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("description")}</p>
       <dl><div><dt>{t("reference")}</dt><dd>{data.ref_code}</dd></div><div><dt>{t("date")}</dt><dd>{date}</dd></div><div><dt>{t("estimate")}</dt><dd>{new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(data.total_amount)}</dd></div><div><dt>{t("status")}</dt><dd>{t(`statuses.${data.status}` as never)}</dd></div></dl>
       <p className="confirmation-reminder">{t("reminder")}</p>

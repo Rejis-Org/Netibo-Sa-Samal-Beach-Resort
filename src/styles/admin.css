@@ -1,0 +1,90 @@
+q.admin-body { min-height: 100vh; background: #f3f8f7; color: var(--navy); }
+.admin-shell { width: min(1120px, calc(100% - 40px)); margin-inline: auto; padding-block: 26px 70px; }
+.admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 18px 0; }
+.admin-topbar .eyebrow, .admin-login-card .eyebrow, .admin-setup-card .eyebrow { margin-bottom: 5px; }
+.admin-topbar h1, .admin-login-card h1, .admin-setup-card h1 { margin: 0; font-size: clamp(30px, 5vw, 42px); line-height: 1.05; }
+.admin-account { display: flex; align-items: center; gap: 20px; color: #53706d; font-size: 13px; }
+.admin-account form { margin: 0; }
+.admin-text-button, .admin-back-link { color: var(--ocean); font-size: 13px; font-weight: 900; }
+.admin-nav { position: sticky; z-index: 10; top: 0; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1px solid #dae8e5; border-radius: 15px; background: rgb(255 255 255 / 96%); box-shadow: 0 5px 18px rgb(12 59 56 / 5%); backdrop-filter: blur(10px); }
+.admin-nav a { min-height: 42px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; color: #35524f; font-size: 13px; font-weight: 900; }
+.admin-nav a:hover { background: #e6f4f1; color: var(--ocean); }
+.admin-summary-grid { margin-block: 22px 42px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.admin-summary-grid article { min-height: 96px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #d7e6e3; border-radius: 17px; background: white; }
+.admin-summary-grid span { color: #53706d; font-size: 12px; font-weight: 800; }
+.admin-summary-grid strong { color: var(--ocean); font-size: 27px; font-variant-numeric: tabular-nums; }
+.admin-summary-grid .admin-summary-role { font-size: 20px; }
+.admin-section { padding-top: 12px; margin-top: 38px; scroll-margin-top: 96px; }
+.admin-section-heading { margin-bottom: 18px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.admin-section-heading .eyebrow { margin-bottom: 4px; }
+.admin-section-heading h2 { margin: 0; font-size: clamp(27px, 4vw, 35px); }
+.admin-section-heading > p { max-width: 400px; margin: 0; color: #5c7773; font-size: 13px; line-height: 1.55; }
+.admin-editor-list { display: grid; gap: 10px; }
+.admin-edit-card { border: 1px solid #d6e5e2; border-radius: 16px; background: white; box-shadow: 0 4px 15px rgb(12 59 56 / 4%); }
+.admin-edit-card summary { min-height: 62px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 1000; }
+.admin-edit-card summary::-webkit-details-marker { display: none; }
+.admin-edit-card summary::after { content: "+"; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #e5f3f0; color: var(--ocean); font-size: 19px; }
+.admin-edit-card[open] summary::after { content: "−"; }
+.admin-edit-card summary span:nth-child(2) { margin-left: auto; color: #5f7773; font-size: 11px; font-weight: 800; }
+.admin-form { display: grid; gap: 14px; }
+.admin-editor-form { padding: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid #e4eeeb; }
+.admin-form label, .admin-setting-card label { display: grid; align-content: start; gap: 6px; color: #4a6663; font-size: 12px; font-weight: 900; }
+.admin-form input:not([type="checkbox"]), .admin-form select, .admin-form textarea, .admin-setting-card input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #c9ddd9; border-radius: 10px; background: white; color: var(--navy); font: 700 14px Arial, sans-serif; }
+.admin-form textarea { resize: vertical; }
+.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus, .admin-setting-card input:focus { outline: 3px solid rgb(19 123 114 / 22%); border-color: var(--ocean); }
+.admin-checkbox { min-height: 44px; display: flex !important; align-items: center; gap: 10px !important; }
+.admin-checkbox input { width: 20px; height: 20px; accent-color: var(--ocean); }
+.admin-field-wide { grid-column: 1 / -1; }
+.admin-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.admin-setting-card { min-width: 0; padding: 15px; display: flex; align-items: end; gap: 12px; border: 1px solid #d6e5e2; border-radius: 14px; background: white; }
+.admin-setting-card label { min-width: 0; flex: 1; }
+.admin-message { margin-block: 16px; padding: 14px 16px; border-radius: 12px; font-size: 13px; font-weight: 800; line-height: 1.5; }
+.admin-message-error { border: 1px solid #f1c8bd; background: #fff1ed; color: #88331e; }
+.admin-message-success { border: 1px solid #b9dfc8; background: #eaf7ef; color: #17663a; }
+.admin-help { margin: 0; color: #5c7773; font-size: 13px; }
+.admin-footer { padding-top: 40px; text-align: center; }
+.admin-footer a, .admin-back-link { min-height: 44px; display: inline-flex; align-items: center; }
+.admin-login-wrap { min-height: 100vh; padding: 22px; display: grid; place-items: center; }
+.admin-login-card, .admin-setup-card { width: min(490px, 100%); padding: clamp(24px, 5vw, 42px); border: 1px solid #d6e5e2; border-radius: 23px; background: white; box-shadow: 0 14px 45px rgb(12 59 56 / 9%); }
+.admin-login-card > p:not(.eyebrow), .admin-setup-card > p:not(.eyebrow) { color: #53706d; font-size: 14px; line-height: 1.65; }
+.admin-login-form { margin-top: 22px; }
+.admin-login-form button { width: 100%; margin-top: 5px; }
+.admin-login-form button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-back-link { margin-bottom: 24px; }
+.admin-setup-card { margin: 12vh auto 0; }
+.admin-setup-card .button { margin-top: 10px; }
+.admin-booking-list { display: grid; gap: 12px; }
+.admin-booking-card, .admin-empty-state { padding: 19px; border: 1px solid #d6e5e2; border-radius: 16px; background: white; box-shadow: 0 4px 15px rgb(12 59 56 / 4%); }
+.admin-empty-state { margin: 0; color: #53706d; }
+.admin-booking-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.admin-booking-heading .eyebrow { margin: 0 0 3px; font-size: 10px; }
+.admin-booking-heading h3 { margin: 0; font: 800 22px/1.1 var(--font-heading), sans-serif; }
+.admin-booking-heading p:not(.eyebrow) { margin: 5px 0 0; color: #53706d; font-size: 12px; }
+.booking-status { padding: 6px 9px; border-radius: 999px; background: #ecf1f0; color: #496260; font-size: 10px; font-weight: 1000; text-transform: capitalize; white-space: nowrap; }
+.booking-status-pending { background: #fff2c9; color: #735807; }.booking-status-awaiting_payment { background: #e0f2ef; color: #137b72; }.booking-status-confirmed { background: #e3f4e8; color: #17663a; }
+.admin-booking-details { margin-top: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: #53706d; font-size: 12px; }
+.admin-booking-details a { color: var(--ocean); font-weight: 900; }
+.admin-booking-details strong { margin-left: auto; color: var(--navy); font-size: 16px; }
+.admin-booking-notes { margin: 12px 0 0; padding: 10px; border-radius: 10px; background: #f4f8f7; color: #4a6663; font-size: 12px; white-space: pre-wrap; }
+.admin-booking-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-booking-actions .button { min-height: 42px; padding-inline: 16px; border: 0; cursor: pointer; }
+.admin-booking-actions .button-outline { border: 1px solid #c9ddd9; background: white; color: #385653; }
+
+@media (max-width: 640px) {
+  .admin-shell { width: calc(100% - 28px); padding-top: 16px; }
+  .admin-topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .admin-account { width: 100%; justify-content: space-between; }
+  .admin-nav { top: 0; gap: 3px; }
+  .admin-nav a { min-height: 40px; padding-inline: 10px; font-size: 12px; }
+  .admin-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 30px; }
+  .admin-summary-grid article:last-child { grid-column: 1 / -1; min-height: 70px; }
+  .admin-section-heading { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .admin-editor-form, .admin-settings-grid { grid-template-columns: 1fr; }
+  .admin-field-wide { grid-column: auto; }
+  .admin-setting-card { align-items: stretch; flex-direction: column; }
+  .admin-setting-card .button { width: 100%; }
+}
+
+@media (max-width: 390px) {
+  .admin-booking-heading { flex-direction: column; }
+}

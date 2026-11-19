@@ -1,0 +1,69 @@
+UI CLEANUP PLAN
+===============
+
+RULES
+- Ang UI kinahanglan parehas gihapon sa karon. Walay mausab sa itsura, walay makulang.
+- Walay git commit o git add. Dili ko mag-commit.
+- 1 section = 1 file. Dili mag daghan og files.
+- Target ~150 lines kada file. Guide ra ni. Dili ni rason nga mutangtang og code o UI. Kung kinahanglan mas taas, ok ra.
+- Walay usbon sa class names.
+- Walay comments sa code.
+- Status = checkboxes ra. Next step = unang [ ] o [~] gikan sa taas.
+
+KEY:  [ ] wala pa   [~] ongoing   [x] done
+
+--------------------------------------------------
+
+STEP 0 - Baseline screenshots (Playwright) para makompara ang UI
+[x] Pa-runon ang dev server (npm run dev)
+[x] Screenshot desktop (1280) ug mobile (390) sa: home, packages, stay, store-and-bar, schedule, find-us, contact, book, privacy, terms, admin login, chat panel (open)
+[x] I-save sa .baseline/ (24 ka files, format: <page>-<desktop|mobile>.png)
+Setup sa compare (parehas gyud): localhost:3000, locale en, reducedMotion, fullPage (ang chat-open viewport ra)
+
+STEP 1 - Bahin-bahin ang globals.css (490 lines)
+CSS ra ni. Walay TSX nga mausab.
+[x] globals.css          -> base ra: reset, colors, buttons, shared (~40 lines)
+[x] styles/layout.css    -> header, nav, footer, mobile action bar
+[x] styles/home.css      -> hero carousel, highlights, location band, ad strip
+[x] styles/pages.css     -> catalog/price cards, legal, contact, find-us, empty panels
+[x] styles/booking.css   -> booking form, calendar, confirmation
+[x] styles/chat.css      -> site chat + admin chat
+[x] styles/admin.css     -> admin dashboard, login, admin bookings
+[x] Ang @media (mobile) mosunod sa section niya
+[x] Check: npm run build + diagnostics + screenshot compare sa .baseline (parehas gyud)
+
+STEP 2 - site-chat.tsx (319 lines -> 3 files)
+[x] components/site-chat.tsx       -> UI ra (~110)
+[x] components/use-site-chat.ts    -> Supabase logic, realtime, send (~130)
+[x] components/use-draggable.ts    -> drag sa chat button (~60)
+[x] Check: build + screenshot compare + test chat (open, send, drag)
+
+STEP 3 - Admin files (basahon una ang sulod before mag-decide)
+[x] admin/chat-inbox.tsx      (177)
+[x] admin/editor-forms.tsx    (154)
+[x] admin/page.tsx            (133)
+[x] Decision: bahinon lang kung naay klaro nga bahin nga mahimong separate file
+[x] Check: build + screenshot compare
+
+STEP 4 - Human
+[x] Final check: build + lint + screenshot compare sa tanan
+[x] Tangtangon ang .baseline/
+
+--------------------------------------------------
+DILI HILABTAN (ok na ang gidak-on)
+- components/hero-carousel.tsx          138
+- components/booking-request-form.tsx   118
+- components/availability-calendar.tsx  110
+- app/[locale]/page.tsx (homepage)       64
+- Tanan pages sa app/[locale]/ ubos 100 lines
+
+--------------------------------------------------
+UNSAAN MAKITA KUNG MAG-CHANGE KA SA... (human sa Step 1)
+Hero          -> components/hero-carousel.tsx + styles/home.css
+Highlights    -> app/[locale]/page.tsx + styles/home.css
+Header/Footer -> components/site-header.tsx, site-footer.tsx + styles/layout.css
+Prices/Stay   -> app/[locale]/packages, stay + styles/pages.css
+Booking       -> components/booking-request-form.tsx + styles/booking.css
+Calendar      -> components/availability-calendar.tsx + styles/booking.css
+Chat          -> components/site-chat.tsx + styles/chat.css
+Admin         -> app/admin/* + styles/admin.css

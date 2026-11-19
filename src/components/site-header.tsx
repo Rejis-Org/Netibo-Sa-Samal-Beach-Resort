@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { CloseIcon, MenuIcon } from "@/components/icons";
 
 const links = [
   { href: "/packages", key: "packages" },
@@ -29,7 +30,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="site-header-inner page-container">
         <Link className="brand" href="/" aria-label={common("homeLabel")} onClick={() => setMenuOpen(false)}>
-          <Image src="/netibo-brand-from-ad.webp" alt="Netibo sa Samal Beach Resort" width={1095} height={312} preload />
+          <Image src="/netibo-logo-v2.png" alt="Netibo sa Samal Beach Resort" width={1458} height={427} preload />
         </Link>
         <nav className="desktop-nav" aria-label={t("label")}>
           {links.map((link) => (
@@ -49,7 +50,7 @@ export function SiteHeader() {
             aria-controls="mobile-navigation"
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <span aria-hidden="true">{menuOpen ? "×" : "☰"}</span>
+            <span aria-hidden="true">{menuOpen ? <CloseIcon size={22} /> : <MenuIcon size={22} />}</span>
           </button>
         </div>
       </div>

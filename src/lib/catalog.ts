@@ -20,7 +20,7 @@ export const resortUnits: readonly ResortUnit[] = [
   { name: "Casa Liam", capacity: "6–8", price: 2_500, features: [] },
   { name: "Villa Aryanna", capacity: "6", price: 2_300, features: [] },
   { name: "Mapitag Function Hall", capacity: null, price: 2_500, features: [] },
-  { name: "Alexa", capacity: "2", price: 1_500, features: [] },
+  { name: "Cozy Alexa", capacity: "2", price: 1_500, features: [] },
   { name: "Cabins Adrean", capacity: "2", price: 1_500, features: [] },
   { name: "Aqua Blaire", capacity: "2–4", price: 500, features: [] },
   { name: "Open Cottage", capacity: "3–4", price: 500, features: [] },

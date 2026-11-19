@@ -15,7 +15,7 @@ export async function SiteFooter() {
       <div className="page-container footer-inner">
         <div className="footer-brand-block">
           <Link href="/" aria-label={t("homeLabel")}>
-            <Image src="/netibo-brand-from-ad.webp" alt="Netibo sa Samal Beach Resort" width={1095} height={312} />
+            <Image src="/netibo-logo-v2.png" alt="Netibo sa Samal Beach Resort" width={1458} height={427} />
           </Link>
           <p>{t("address")}</p>
         </div>

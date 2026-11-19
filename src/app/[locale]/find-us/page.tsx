@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
 import { Link } from "@/i18n/navigation";
 import { FACEBOOK_URL } from "@/lib/site";
+import { ArrowUpRightIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Find Netibo sa Samal",
@@ -20,8 +21,7 @@ export default async function FindUsPage() {
           <p className="eyebrow">{t("addressLabel")}</p>
           <h2>{t("address")}</h2>
           <p>{t("travelNote")}</p>
-          <p className="todo-note">{t("directionsTodo")}</p>
-          <a className="text-link" href={FACEBOOK_URL} target="_blank" rel="noreferrer">{t("askDirections")} ↗</a>
+          <a className="text-link" href={FACEBOOK_URL} target="_blank" rel="noreferrer">{t("askDirections")} <ArrowUpRightIcon size={16} /></a>
           <Link className="button button-blue" href="/contact">{t("contactAction")}</Link>
         </div>
       </div>

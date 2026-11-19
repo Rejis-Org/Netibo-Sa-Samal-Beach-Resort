@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
 import { AvailabilityCalendar } from "@/components/availability-calendar";
 import { Link } from "@/i18n/navigation";
+import { ArrowUpRightIcon, CalendarIcon } from "@/components/icons";
 import { getAvailabilityWindow, getPublicAvailability } from "@/lib/booking-data";
 import type { AppLocale } from "@/i18n/routing";
 
@@ -32,7 +33,7 @@ export default async function SchedulePage() {
         }}
       />
       <p className="page-note">{t("calendarNote")}</p>
-      <Link className="button button-blue" href="/book">{t("bookAction")} <span aria-hidden="true">↗</span></Link>
-    </div> : <div className="empty-panel schedule-panel"><span className="panel-icon" aria-hidden="true">▦</span><h2>{t("calendarTitle")}</h2><p>{t("calendarText")}</p><Link className="button button-blue" href="/contact">{t("contactAction")} <span aria-hidden="true">↗</span></Link></div>}
+      <Link className="button button-blue" href="/book">{t("bookAction")} <ArrowUpRightIcon size={18} /></Link>
+    </div> : <div className="empty-panel schedule-panel"><span className="panel-icon" aria-hidden="true"><CalendarIcon size={28} /></span><h2>{t("calendarTitle")}</h2><p>{t("calendarText")}</p><Link className="button button-blue" href="/contact">{t("contactAction")} <ArrowUpRightIcon size={18} /></Link></div>}
   </section>;
 }

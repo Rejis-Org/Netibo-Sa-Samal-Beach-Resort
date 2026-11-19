@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { AvailabilityDay } from "@/lib/booking-data";
 import type { AppLocale } from "@/i18n/routing";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 
 type CalendarProps = {
   days: AvailabilityDay[];
@@ -61,9 +62,9 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
   return (
     <div className="availability-calendar">
       <div className="calendar-month-heading">
-        <button type="button" className="calendar-month-button" aria-label={labels.previousMonth} disabled={!canGoBack} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}>‹</button>
+        <button type="button" className="calendar-month-button" aria-label={labels.previousMonth} disabled={!canGoBack} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}><ChevronLeftIcon size={20} /></button>
         <h3>{monthFormatter.format(month)}</h3>
-        <button type="button" className="calendar-month-button" aria-label={labels.nextMonth} disabled={!canGoForward} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}>›</button>
+        <button type="button" className="calendar-month-button" aria-label={labels.nextMonth} disabled={!canGoForward} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}><ChevronRightIcon size={20} /></button>
       </div>
       <div className="calendar-grid" role="grid" aria-label={monthFormatter.format(month)}>
         {weekdays.map((weekday, index) => <span role="columnheader" className="calendar-weekday" key={`${weekday}-${index}`}>{weekday}</span>)}

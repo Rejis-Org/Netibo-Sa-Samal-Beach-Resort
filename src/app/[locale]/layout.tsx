@@ -20,6 +20,10 @@ export const metadata: Metadata = {
     template: "%s | Netibo sa Samal",
   },
   description: "Plan a beach stay at Netibo sa Samal Beach Resort in Barangay Kinawitnon, Island Garden City of Samal.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
   openGraph: {
     title: "Netibo sa Samal Beach Resort",
     description: "Weekend vibes are better by the beach! Relax, unwind, and create beautiful memories with family and friends.",

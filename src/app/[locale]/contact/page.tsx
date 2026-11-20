@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
 import { FACEBOOK_URL, RESORT_PHONE_TEL } from "@/lib/site";
 import { getResortPhone } from "@/lib/public-settings";
-import { ArrowUpRightIcon } from "@/components/icons";
+import { ArrowUpRightIcon, MessengerIcon, PhoneIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Contact Netibo sa Samal",
@@ -17,8 +17,8 @@ export default async function ContactPage() {
     <section className="page-section page-container">
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <div className="contact-choice-grid">
-        <a className="contact-choice" href={`tel:${phone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}><span className="choice-kicker">{t("phoneLabel")}</span><strong>{phone}</strong><span>{t("callAction")} <ArrowUpRightIcon size={16} /></span></a>
-        <a className="contact-choice contact-choice-sun" href={FACEBOOK_URL} target="_blank" rel="noreferrer"><span className="choice-kicker">{t("messengerLabel")}</span><strong>{t("messengerTitle")}</strong><span>{t("messageAction")} <ArrowUpRightIcon size={16} /></span></a>
+        <a className="contact-choice" href={`tel:${phone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}><span className="choice-head"><span className="choice-icon"><PhoneIcon size={22} /></span><span className="choice-kicker">{t("phoneLabel")}</span></span><strong>{phone}</strong><span>{t("callAction")} <ArrowUpRightIcon size={16} /></span></a>
+        <a className="contact-choice contact-choice-sun" href={FACEBOOK_URL} target="_blank" rel="noreferrer"><span className="choice-head"><span className="choice-icon choice-icon-messenger"><MessengerIcon size={22} /></span><span className="choice-kicker">{t("messengerLabel")}</span></span><strong>{t("messengerTitle")}</strong><span>{t("messageAction")} <ArrowUpRightIcon size={16} /></span></a>
       </div>
     </section>
   );

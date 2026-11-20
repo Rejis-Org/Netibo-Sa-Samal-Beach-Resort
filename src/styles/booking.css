@@ -53,6 +53,12 @@
 .booking-aside h2 { margin: 7px 0 10px; font: 800 29px/1.05 var(--font-heading), sans-serif; }
 .booking-aside p:not(.eyebrow), .booking-aside li { color: #4a6663; font-size: 13px; line-height: 1.6; }
 .booking-aside ul { padding-left: 19px; display: grid; gap: 9px; }
+.booking-aside .booking-checks { padding-left: 0; list-style: none; }
+.booking-checks li { display: flex; align-items: flex-start; gap: 8px; }
+.booking-checks svg { flex: none; margin-top: 3px; color: var(--ocean); }
+.booking-unavailable { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.booking-unavailable h2, .booking-unavailable p { margin: 0; }
+.booking-unavailable .button { gap: 8px; }
 .schedule-calendar-wrap { width: min(650px, 100%); margin-inline: auto; display: grid; justify-items: center; gap: 16px; background: #fff9e9; }
 .schedule-calendar-wrap .availability-calendar { width: 100%; }
 .booking-unavailable { width: min(690px, 100%); display: grid; justify-items: start; gap: 12px; }

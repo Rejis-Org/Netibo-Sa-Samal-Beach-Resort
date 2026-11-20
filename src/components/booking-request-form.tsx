@@ -14,6 +14,7 @@ type Props = {
   minDate: string;
   maxDate: string;
   error?: string;
+  initialDate?: string;
 };
 
 const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 });

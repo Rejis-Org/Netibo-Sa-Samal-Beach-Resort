@@ -48,7 +48,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-scroll-behavior="smooth">
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
         <NextIntlClientProvider messages={messages}>
           <MotionProvider>

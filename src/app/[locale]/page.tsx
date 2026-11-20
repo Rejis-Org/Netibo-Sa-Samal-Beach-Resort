@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroVideo } from "@/components/hero-video";
@@ -11,6 +12,7 @@ export default async function HomePage() {
   return (
     <>
       <div className="hero-wrap">
+        <div className="hero-poster" aria-hidden="true" />
         <HeroVideo />
         <HeroCarousel />
       </div>
@@ -21,25 +23,37 @@ export default async function HomePage() {
         </div>
         <div className="highlight-grid">
           <article className="highlight-card highlight-card-event">
-            <span className="highlight-mark" aria-hidden="true"><SunIcon size={24} /></span>
-            <p className="eyebrow">{t("eventKicker")}</p>
-            <h3>{t("exclusiveTitle")}</h3>
-            <p>{t("exclusiveText")}</p>
-            <Link className="text-link" href="/packages">{t("seePackages")} <ArrowUpRightIcon size={16} /></Link>
+            <div className="highlight-photo">
+              <Image src="/images/mapitag-function-hall/mapitag-function-hall-02-landscape.jpg" alt="" fill sizes="(max-width: 740px) 100vw, 600px" />
+            </div>
+            <div className="highlight-body">
+              <p className="eyebrow highlight-kicker"><span className="highlight-mark" aria-hidden="true"><SunIcon size={18} /></span>{t("eventKicker")}</p>
+              <h3>{t("exclusiveTitle")}</h3>
+              <p>{t("exclusiveText")}</p>
+              <Link className="text-link" href="/packages">{t("seePackages")} <ArrowUpRightIcon size={16} /></Link>
+            </div>
           </article>
           <article className="highlight-card highlight-card-stay">
-            <span className="highlight-mark" aria-hidden="true"><HomeIcon size={24} /></span>
-            <p className="eyebrow">{t("stayKicker")}</p>
-            <h3>{t("cottageTitle")}</h3>
-            <p>{t("cottageText")}</p>
-            <Link className="text-link" href="/stay">{t("seeStay")} <ArrowUpRightIcon size={16} /></Link>
+            <div className="highlight-photo">
+              <Image src="/images/cottage/cottage-05-landscape.jpg" alt="" fill sizes="(max-width: 740px) 100vw, 280px" />
+            </div>
+            <div className="highlight-body">
+              <p className="eyebrow highlight-kicker"><span className="highlight-mark" aria-hidden="true"><HomeIcon size={18} /></span>{t("stayKicker")}</p>
+              <h3>{t("cottageTitle")}</h3>
+              <p>{t("cottageText")}</p>
+              <Link className="text-link" href="/stay">{t("seeStay")} <ArrowUpRightIcon size={16} /></Link>
+            </div>
           </article>
           <article className="highlight-card highlight-card-store">
-            <span className="highlight-mark" aria-hidden="true"><UtensilsIcon size={24} /></span>
-            <p className="eyebrow">{t("storeKicker")}</p>
-            <h3>{t("storeTitle")}</h3>
-            <p>{t("storeText")}</p>
-            <Link className="text-link" href="/store-and-bar">{t("seeStore")} <ArrowUpRightIcon size={16} /></Link>
+            <div className="highlight-photo">
+              <Image src="/images/canteen/canteen-01-landscape.jpg" alt="" fill sizes="(max-width: 740px) 100vw, 280px" />
+            </div>
+            <div className="highlight-body">
+              <p className="eyebrow highlight-kicker"><span className="highlight-mark" aria-hidden="true"><UtensilsIcon size={18} /></span>{t("storeKicker")}</p>
+              <h3>{t("storeTitle")}</h3>
+              <p>{t("storeText")}</p>
+              <Link className="text-link" href="/store-and-bar">{t("seeStore")} <ArrowUpRightIcon size={16} /></Link>
+            </div>
           </article>
         </div>
       </section>

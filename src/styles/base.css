@@ -47,7 +47,7 @@ p { text-wrap: pretty; }
 .section-heading { margin-bottom: 25px; text-align: center; }
 .section-heading h2, .page-intro h1, .home-location-band h2, .ad-strip h2 { margin: 0; color: var(--navy); font-size: clamp(34px, 4.5vw, 52px); line-height: 1.05; letter-spacing: -.035em; }
 .section-heading h2 { position: relative; z-index: 0; display: inline-block; padding: 10px 22px; color: white; }
-.section-heading h2::before { content: ""; position: absolute; z-index: -1; inset: 10px -22px 2px; background: var(--navy); clip-path: polygon(2% 17%, 12% 9%, 31% 14%, 48% 4%, 70% 10%, 88% 6%, 99% 18%, 96% 82%, 83% 88%, 61% 82%, 43% 95%, 22% 86%, 4% 92%); transform: rotate(-1deg); }
+.section-heading h2::before { content: ""; position: absolute; z-index: -1; inset: 5px -26px 5px; background: var(--navy); clip-path: polygon(2% 17%, 12% 9%, 31% 14%, 48% 4%, 70% 10%, 88% 6%, 99% 18%, 96% 82%, 83% 88%, 61% 82%, 43% 95%, 22% 86%, 4% 92%); transform: rotate(-1deg); }
 .text-link { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; color: var(--ocean); font-size: 14px; font-weight: 1000; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
 @media (max-width: 740px) {

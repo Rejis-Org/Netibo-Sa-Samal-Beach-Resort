@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Send a booking request to Netibo sa Samal Beach Resort.",
 };
 
-type Props = { searchParams: Promise<{ error?: string }> };
+type Props = { searchParams: Promise<{ error?: string; date?: string }> };
 
 export default async function BookPage({ searchParams }: Props) {
   const [t, localeValue, query, phone, options] = await Promise.all([
@@ -21,11 +21,13 @@ export default async function BookPage({ searchParams }: Props) {
   const locale = localeValue as AppLocale;
   const { start, end } = getAvailabilityWindow();
   const days = options ? await getPublicAvailability(start, end) : null;
+  // Prefilled from the home page date picker; ignored unless it is a valid date inside the booking window.
+  const initialDate = query.date && /^\d{4}-\d{2}-\d{2}$/.test(query.date) && query.date >= start && query.date <= end ? query.date : "";
   return (
     <section className="page-section page-container">
       <PageIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <div className="booking-layout">
-        {options && days ? <BookingRequestForm locale={locale} options={options} days={days} minDate={start} maxDate={end} error={query.error} /> : <div className="booking-unavailable">
+        {options && days ? <BookingRequestForm locale={locale} options={options} days={days} minDate={start} maxDate={end} error={query.error} initialDate={initialDate} /> : <div className="booking-unavailable">
           <h2>{t("offlineTitle")}</h2><p>{t("offlineText")}</p>
           <a className="button button-blue" href={`tel:${phone.replace(/[^+\d]/g, "") || RESORT_PHONE_TEL}`}>{t("callKicker")}: {phone}</a>
           <a className="button button-outline" href={FACEBOOK_URL} target="_blank" rel="noreferrer">{t("messageKicker")}</a>

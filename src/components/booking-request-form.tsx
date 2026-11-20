@@ -14,17 +14,18 @@ type Props = {
   minDate: string;
   maxDate: string;
   error?: string;
+  initialDate?: string;
 };
 
 const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 });
 
-export function BookingRequestForm({ locale, options, days, minDate, maxDate, error }: Props) {
+export function BookingRequestForm({ locale, options, days, minDate, maxDate, error, initialDate }: Props) {
   const t = useTranslations("pages.bookingFlow");
   const [kind, setKind] = useState("exclusive");
   const [packageId, setPackageId] = useState(options.packages.find((item) => item.scope === "exclusive")?.id ?? "");
   const [unitId, setUnitId] = useState("");
   const [visitType, setVisitType] = useState("day-tour");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(initialDate ?? "");
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const exclusivePackages = options.packages.filter((item) => item.scope === "exclusive" && item.price !== null);

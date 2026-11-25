@@ -11,6 +11,10 @@ type CalendarProps = {
   minDate: string;
   maxDate: string;
   selectedDate?: string;
+  /** When set with selectedDate, the days from selectedDate through rangeEnd are highlighted as one stay. */
+  rangeEnd?: string;
+  /** Let closed/exclusive days be tapped (used to inspect a day rather than pick it). */
+  allowUnavailable?: boolean;
   onSelect?: (date: string) => void;
   reserveType?: "exclusive" | "walk-in";
   selectable?: boolean;
@@ -34,7 +38,7 @@ function dateValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedDate, onSelect, reserveType = "walk-in", selectable = false, labels }: CalendarProps) {
+export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedDate, rangeEnd, allowUnavailable = false, onSelect, reserveType = "walk-in", selectable = false, labels }: CalendarProps) {
   const [month, setMonth] = useState(() => {
     const today = parseDate(minDate);
     return new Date(today.getFullYear(), today.getMonth(), 1, 12);
@@ -75,13 +79,16 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
           const past = value < minDate;
           const beyondWindow = value > maxDate;
           const unavailable = state === "closed" || state === "exclusive" || (reserveType === "exclusive" && state === "partial");
-          const disabled = past || beyondWindow || (selectable ? unavailable : false);
+          const disabled = past || beyondWindow || (selectable && !allowUnavailable ? unavailable : false);
+          const inRange = Boolean(selectedDate && rangeEnd && value > selectedDate && value < rangeEnd);
+          const isSelected = selectedDate === value || rangeEnd === value;
           const stateLabel = state ? labels[state] : labels.available;
           const className = [
             "calendar-day",
             !inMonth && "calendar-day-outside",
             state && `calendar-day-${state}`,
-            selectedDate === value && "calendar-day-selected",
+            isSelected && "calendar-day-selected",
+            inRange && "calendar-day-in-range",
             disabled && "calendar-day-disabled",
           ].filter(Boolean).join(" ");
           return (
@@ -90,7 +97,7 @@ export function AvailabilityCalendar({ days, locale, minDate, maxDate, selectedD
               type="button"
               className={className}
               aria-label={`${new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(date)}: ${stateLabel}`}
-              aria-pressed={selectedDate === value}
+              aria-pressed={isSelected}
               disabled={disabled}
               onClick={() => onSelect?.(value)}
             >

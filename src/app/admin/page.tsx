@@ -4,12 +4,17 @@ import { cookies } from "next/headers";
 import { getAdminContext } from "@/lib/supabase/admin";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { logoutAction, updateBookingStatusAction } from "./actions";
-import { BlockedDatesPanel, ManualBookingForm, PackageEditor, SettingsEditor, UnitEditor } from "./editor-forms";
+import { BlockedDatesPanel, CorkagePresetsEditor, EditBookingForm, ExtendBookingForm, PackageEditor, SettingsEditor, UnitEditor, breakdownSummary } from "./editor-forms";
 import { AdminChatInbox } from "./chat-inbox";
-import { manilaToday } from "@/lib/booking-data";
+import { manilaToday, getBookingOptions } from "@/lib/booking-data";
 import { expireUnpaidHolds } from "@/lib/booking-maintenance";
+import { addDays, maxExtensionDays } from "@/lib/availability";
+import { normalizeCorkageItems } from "@/lib/pricing";
+import { AvailabilityGrid } from "./availability-grid";
+import { ManualBookingForm } from "./manual-booking-form";
+import { Logbook, type ExpectedGuest, type LogbookEntry } from "./logbook";
 
-type AdminPageProps = { searchParams: Promise<{ error?: string; saved?: string }> };
+type AdminPageProps = { searchParams: Promise<{ error?: string; saved?: string; from?: string }> };
 
 const errorMessages: Record<string, string> = {
   unit: "Please check the unit fields and try saving again.",
@@ -23,6 +28,11 @@ const errorMessages: Record<string, string> = {
   blocked: "That closed date could not be saved or removed. Check it and try again.",
   blockedExists: "That date is already closed.",
   blockedConflict: "That date already has an approved or confirmed booking. Cancel that booking first.",
+  extend: "That stay could not be extended. Only confirmed or awaiting-payment room bookings can be extended.",
+  extendConflict: "Those extra days are already booked or closed, so the stay was not extended.",
+  price: "The price could not be calculated because a price or entrance fee is missing. Check the catalog and try again.",
+  checkin: "That check-in or check-out could not be saved. Refresh the logbook and try again.",
+  alreadyIn: "That booking is already checked in.",
 };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
@@ -55,12 +65,47 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const { data: settings, error: settingsError } = admin.role === "owner"
     ? await admin.supabase.from("settings").select("*").order("key")
     : { data: [], error: null };
-  const { error, saved } = await searchParams;
+  const { error, saved, from: fromParam } = await searchParams;
+  // Bookings that still matter for the next weeks: used by the availability grid and to see how far a stay can be extended.
+  const { data: openBookings } = await admin.supabase.from("bookings").select("*").gte("date_end", today).in("status", ["pending", "awaiting_payment", "confirmed"]);
+  const closedDates = (blockedDates ?? []).map((item) => item.date);
+  const gridFrom = fromParam && /^\d{4}-\d{2}-\d{2}$/.test(fromParam) && fromParam > today ? fromParam : today;
   const loadFailed = unitsError || packagesError || bookingsError || settingsError || blockedError;
   const packageNames = new Map((packages ?? []).map((item) => [item.id, typeof item.name === "object" && item.name && !Array.isArray(item.name) && typeof item.name.en === "string" ? item.name.en : item.slug]));
   const unitNames = new Map((units ?? []).map((item) => [item.id, item.name]));
   const pendingCount = (bookings ?? []).filter((item) => item.status === "pending").length;
   const unreadBookingCount = pendingCount;
+
+  // Booking form data: current prices, plus which places are taken over the next four months.
+  const options = await getBookingOptions("en");
+  const { data: unitRowsData } = await admin.supabase.rpc("get_unit_availability", { from_date: today, through_date: addDays(today, 120) });
+  const unitRows = unitRowsData ?? [];
+
+  // Logbook: who is in, who is booked for today but has not arrived, and who left today.
+  type PartyBooking = NonNullable<typeof openBookings>[number];
+  const dayStartIso = new Date(`${today}T00:00:00+08:00`).toISOString();
+  const [{ data: openLogs }, { data: leftLogs }, { data: coveringToday }] = await Promise.all([
+    admin.supabase.from("guest_log").select("*").is("checked_out_at", null).order("checked_in_at"),
+    admin.supabase.from("guest_log").select("*").gte("checked_out_at", dayStartIso).order("checked_out_at"),
+    admin.supabase.from("bookings").select("*").lte("date_start", today).gte("date_end", today).in("status", ["awaiting_payment", "confirmed"]).order("guest_name"),
+  ]);
+  const coveringIds = (coveringToday ?? []).map((item) => item.id);
+  const { data: coveringLogs } = coveringIds.length ? await admin.supabase.from("guest_log").select("booking_id").in("booking_id", coveringIds) : { data: [] as { booking_id: string }[] };
+  const loggedIds = new Set((coveringLogs ?? []).map((item) => item.booking_id));
+  const partyById = new Map<string, PartyBooking>((coveringToday ?? []).map((item) => [item.id, item]));
+  const missingIds = [...new Set([...(openLogs ?? []), ...(leftLogs ?? [])].map((item) => item.booking_id).filter((id) => !partyById.has(id)))];
+  if (missingIds.length) {
+    const { data: extraBookings } = await admin.supabase.from("bookings").select("*").in("id", missingIds);
+    for (const item of extraBookings ?? []) partyById.set(item.id, item);
+  }
+  const titleOf = (item: { type: string; package_id: string | null; unit_ids: string[] }) => item.type === "exclusive" ? packageNames.get(item.package_id ?? "") ?? "Whole resort" : item.type === "unit" ? item.unit_ids.map((id) => unitNames.get(id) ?? "Stay").join(", ") : "Entrance only";
+  const toEntry = (log: NonNullable<typeof openLogs>[number]): LogbookEntry | null => {
+    const party = partyById.get(log.booking_id);
+    return party ? { logId: log.id, guest: party.guest_name, phone: party.phone, title: titleOf(party), adults: log.actual_adults, children: log.actual_children, checkedInAt: log.checked_in_at, checkedOutAt: log.checked_out_at, stayEnd: party.date_end } : null;
+  };
+  const inResort = (openLogs ?? []).map(toEntry).filter((entry): entry is LogbookEntry => entry !== null);
+  const leftToday = (leftLogs ?? []).map(toEntry).filter((entry): entry is LogbookEntry => entry !== null);
+  const expectedGuests: ExpectedGuest[] = (coveringToday ?? []).filter((item) => !loggedIds.has(item.id)).map((item) => ({ bookingId: item.id, guest: item.guest_name, phone: item.phone, title: titleOf(item), status: item.status, adults: item.adults, children: item.children, stayStart: item.date_start, stayEnd: item.date_end }));
 
   return (
     <main className="admin-shell">
@@ -69,7 +114,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="admin-account"><span>{admin.email} · {admin.role}</span><form action={logoutAction}><button className="admin-text-button" type="submit">Sign out</button></form></div>
       </header>
       <nav className="admin-nav" aria-label="Admin sections">
-        <a href="#chats">Chats</a><a href="#bookings">Bookings</a><a href="#blocked-dates">Closed dates</a><a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
+        <a href="#chats">Chats</a><a href="#availability">Availability</a><a href="#logbook">Logbook</a><a href="#bookings">Bookings</a><a href="#blocked-dates">Closed dates</a><a href="#units">Cottages and rooms</a><a href="#packages">Packages and prices</a>{admin.role === "owner" && <a href="#settings">Resort settings</a>}
+        <Link href="/admin/reports">Daily report</Link>
         <Link href="/">View public site ↗</Link>
       </nav>
       <section className="admin-summary-grid" aria-label="Resort overview">
@@ -87,24 +133,43 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <AdminChatInbox />
       </section>
 
+      <section id="availability" className="admin-section">
+        <div className="admin-section-heading"><div><p className="eyebrow">Rooms and cottages</p><h2>Availability</h2></div><p>See which place is taken on which day. A place is free unless a booking or a closed date covers it.</p></div>
+        <AvailabilityGrid units={(units ?? []).filter((unit) => unit.active)} bookings={openBookings ?? []} blockedDates={closedDates} from={gridFrom} today={today} />
+      </section>
+
+      <section id="logbook" className="admin-section">
+        <div className="admin-section-heading"><div><p className="eyebrow">Today at the resort</p><h2>Guest logbook</h2></div><p>Check guests in when they arrive and out when they leave. The end-of-day report is built from this.</p></div>
+        {options && <ManualBookingForm walkIn packages={options.packages.filter((item) => item.scope === "exclusive" && item.price !== null).map((item) => ({ id: item.id, name: item.name, price: item.price, paxIncluded: item.paxIncluded }))} units={options.units.map((item) => ({ id: item.id, name: item.name, price: item.price, freeEntranceCount: item.freeEntranceCount }))} unitRows={unitRows} entranceFees={options.entranceFees} extraGuestFee={options.extraGuestFee} today={today} />}
+        <Logbook inResort={inResort} expected={expectedGuests} leftToday={leftToday} today={today} />
+      </section>
+
       <section id="bookings" className="admin-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Guest requests</p><h2>Bookings</h2></div><p>Approve a request to start its configured payment deadline. A date is not held while a request is pending.</p></div>
-        <ManualBookingForm packages={packages ?? []} units={units ?? []} />
+        {options && <ManualBookingForm packages={options.packages.filter((item) => item.scope === "exclusive" && item.price !== null).map((item) => ({ id: item.id, name: item.name, price: item.price, paxIncluded: item.paxIncluded }))} units={options.units.map((item) => ({ id: item.id, name: item.name, price: item.price, freeEntranceCount: item.freeEntranceCount }))} unitRows={unitRows} entranceFees={options.entranceFees} extraGuestFee={options.extraGuestFee} today={today} />}
         <div className="admin-booking-list">
           {(bookings ?? []).length === 0 && <p className="admin-empty-state">No booking requests yet.</p>}
           {(bookings ?? []).map((booking) => {
             const title = booking.type === "exclusive" ? packageNames.get(booking.package_id ?? "") ?? "Exclusive package" : booking.type === "unit" ? booking.unit_ids.map((id) => unitNames.get(id) ?? "Stay").join(", ") : "Entrance";
-            const date = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" }).format(new Date(`${booking.date_start}T12:00:00+08:00`));
+            const dateFormat = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
+            const startLabel = dateFormat.format(new Date(`${booking.date_start}T12:00:00+08:00`));
+            const date = booking.date_end > booking.date_start ? `${startLabel} – ${dateFormat.format(new Date(`${booking.date_end}T12:00:00+08:00`))}` : startLabel;
+            const canExtend = booking.type === "unit" && (booking.status === "confirmed" || booking.status === "awaiting_payment") && booking.date_end >= today;
+            const extendDays = canExtend ? maxExtensionDays({ booking, bookings: openBookings ?? [], blockedDates: closedDates }) : 0;
+            const summary = breakdownSummary(booking.price_breakdown);
             return <article className="admin-booking-card" key={booking.id}>
               <div className="admin-booking-heading"><div><p className="eyebrow">{booking.ref_code} · {date}</p><h3>{booking.guest_name}</h3><p>{title} · {booking.adults + booking.children} guests</p></div><span className={`booking-status booking-status-${booking.status}`}>{booking.status.replaceAll("_", " ")}</span></div>
               <div className="admin-booking-details"><a href={`tel:${booking.phone.replace(/[^+\d]/g, "")}`}>{booking.phone}</a>{booking.guest_email && <a href={`mailto:${booking.guest_email}`}>{booking.guest_email}</a>}<strong>{new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(booking.total_amount)}</strong></div>
               {booking.notes && <p className="admin-booking-notes">{booking.notes}</p>}
+              {summary && <p className="admin-help">{summary}{booking.total_overridden && <> · <span className="admin-flag">Total set by hand</span></>}</p>}
               {booking.deposit_required !== null && <p className="admin-help">Deposit requested: ₱{booking.deposit_required.toLocaleString("en-PH")} · Deadline {booking.payment_deadline ? new Date(booking.payment_deadline).toLocaleString("en-PH") : "not set"}</p>}
               <form className="admin-booking-actions" action={updateBookingStatusAction}><input type="hidden" name="booking_id" value={booking.id} />
                 {booking.status === "pending" && <><button className="button button-blue" name="booking_action" value="approve">Approve</button><button className="button button-outline" name="booking_action" value="decline">Decline</button></>}
                 {booking.status === "awaiting_payment" && <><button className="button button-blue" name="booking_action" value="paid">Mark paid</button><button className="button button-outline" name="booking_action" value="cancel">Cancel</button></>}
                 {booking.status === "confirmed" && <><button className="button button-blue" name="booking_action" value="complete">Complete</button><button className="button button-outline" name="booking_action" value="cancel">Cancel</button></>}
               </form>
+              {canExtend && <ExtendBookingForm booking={booking} maxDays={extendDays} />}
+              <EditBookingForm booking={booking} />
             </article>;
           })}
         </div>
@@ -126,6 +191,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       {admin.role === "owner" && <section id="settings" className="admin-section">
         <div className="admin-section-heading"><div><p className="eyebrow">Owner only</p><h2>Resort settings</h2></div><p>Optional details can stay blank until confirmed.</p></div>
         <SettingsEditor settings={settings ?? []} owner />
+        <CorkagePresetsEditor presets={normalizeCorkageItems((settings ?? []).find((item) => item.key === "corkage_presets")?.value)} />
       </section>}
       <footer className="admin-footer"><Link href="/">Back to the public website</Link></footer>
     </main>

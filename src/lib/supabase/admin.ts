@@ -1,8 +1,10 @@
+import { cache } from "react";
 import { createSupabaseServerClient } from "./server";
 
 export type AdminRole = "owner" | "staff";
 
-export async function getAdminContext() {
+// cache() means the layout, the page, and any streamed component in one request share a single lookup.
+export const getAdminContext = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getClaims();
   const claims = data?.claims;
@@ -24,4 +26,4 @@ export async function getAdminContext() {
     email: typeof claims?.email === "string" ? claims.email : "",
     role: roleRecord.role as AdminRole,
   };
-}
+});

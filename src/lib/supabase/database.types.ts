@@ -37,7 +37,7 @@ type Booking = {
   guest_name: string; phone: string; guest_email: string | null; contact_extra: string | null; notes: string | null;
   status: "pending" | "awaiting_payment" | "confirmed" | "cancelled" | "completed";
   total_amount: number; deposit_required: number | null; payment_deadline: string | null; hold_expires_at: string | null;
-  access_token: string; guest_uid: string | null; created_at: string; updated_at: string;
+  access_token: string; guest_uid: string | null; created_at: string; updated_at: string; line_items: Json | null;
 };
 type BlockedDate = { id: string; date: string; reason: string; created_by: string | null; created_at: string };
 
@@ -50,8 +50,8 @@ export type Database = {
         key: string; value: Json; updated_at?: string; updated_by?: string | null;
       }, Partial<Setting>>;
       user_roles: Table<UserRole, UserRole, Partial<UserRole>>;
-      bookings: Table<Booking, Omit<Booking, "id" | "created_at" | "updated_at" | "access_token"> & {
-        id?: string; created_at?: string; updated_at?: string; access_token?: string;
+      bookings: Table<Booking, Omit<Booking, "id" | "created_at" | "updated_at" | "access_token" | "line_items"> & {
+        id?: string; created_at?: string; updated_at?: string; access_token?: string; line_items?: Json | null;
       }, Partial<Booking>>;
       conversations: Table<Conversation, Omit<Conversation, "id" | "visitor_token" | "created_at" | "last_message_at"> & {
         id?: string; visitor_token?: string; created_at?: string; last_message_at?: string;

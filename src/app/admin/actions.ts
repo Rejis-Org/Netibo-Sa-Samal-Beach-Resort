@@ -105,14 +105,14 @@ export async function saveUnitAction(formData: FormData) {
   const freeEntrance = readInteger(formData, "free_entrance_count");
 
   if (!id || !name || !type || !["cottage", "room", "hall", "kubo"].includes(type) || price === undefined || capacityMin === undefined || capacityMax === undefined || sortOrder === undefined || sortOrder === null || photosRaw === null || priceNote === null || freeEntrance === undefined || freeEntrance === null || freeEntrance > 1000) {
-    redirect("/admin?error=unit#units");
+    redirect("/admin/units?error=unit");
   }
   if ((capacityMin !== null && capacityMin > 10_000) || (capacityMax !== null && capacityMax > 10_000) || sortOrder > 100_000 || (capacityMin !== null && capacityMax !== null && capacityMin > capacityMax) || (price !== null && price > 100_000_000)) {
-    redirect("/admin?error=unit#units");
+    redirect("/admin/units?error=unit");
   }
 
   const { data: oldRow, error: readError } = await admin.supabase.from("units").select("*").eq("id", id).maybeSingle();
-  if (readError || !oldRow) redirect("/admin?error=unit#units");
+  if (readError || !oldRow) redirect("/admin/units?error=unit");
   const update = {
     name, type: type as "cottage" | "room" | "hall" | "kubo",
     capacity_min: capacityMin, capacity_max: capacityMax,
@@ -123,10 +123,10 @@ export async function saveUnitAction(formData: FormData) {
     active: formData.get("active") === "on", sort_order: sortOrder,
   };
   const { error } = await admin.supabase.from("units").update(update).eq("id", id);
-  if (error) redirect("/admin?error=unit#units");
+  if (error) redirect("/admin/units?error=unit");
   await logChange(admin.supabase, admin.userId, "units", id, oldRow as unknown as Json, update as unknown as Json);
   revalidatePath("/", "layout");
-  redirect("/admin?saved=unit#units");
+  redirect("/admin/units?saved=unit");
 }
 
 export async function savePackageAction(formData: FormData) {
@@ -145,14 +145,14 @@ export async function savePackageAction(formData: FormData) {
   const notesFil = readText(formData, "notes_fil", 1000);
   const notesCeb = readText(formData, "notes_ceb", 1000);
   if (!id || !nameEn || !nameFil || !nameCeb || price === undefined || pax === undefined || sortOrder === undefined || sortOrder === null || !scope || !["exclusive", "walk-in"].includes(scope) || notesEn === null || notesFil === null || notesCeb === null) {
-    redirect("/admin?error=package#packages");
+    redirect("/admin/packages?error=package");
   }
   if ((price !== null && price > 100_000_000) || (pax !== null && pax > 10_000) || sortOrder > 100_000 || (formData.get("weekday_only") === "on" && formData.get("weekend_only") === "on")) {
-    redirect("/admin?error=package#packages");
+    redirect("/admin/packages?error=package");
   }
 
   const { data: oldRow, error: readError } = await admin.supabase.from("packages").select("*").eq("id", id).maybeSingle();
-  if (readError || !oldRow) redirect("/admin?error=package#packages");
+  if (readError || !oldRow) redirect("/admin/packages?error=package");
   const update = {
     name: { en: nameEn, fil: nameFil, ceb: nameCeb },
     scope: scope as "exclusive" | "walk-in", price_amount: price, pax_included: pax,
@@ -162,10 +162,10 @@ export async function savePackageAction(formData: FormData) {
     active: formData.get("active") === "on", sort_order: sortOrder,
   };
   const { error } = await admin.supabase.from("packages").update(update).eq("id", id);
-  if (error) redirect("/admin?error=package#packages");
+  if (error) redirect("/admin/packages?error=package");
   await logChange(admin.supabase, admin.userId, "packages", id, oldRow as unknown as Json, update as unknown as Json);
   revalidatePath("/", "layout");
-  redirect("/admin?saved=package#packages");
+  redirect("/admin/packages?saved=package");
 }
 
 const settingDefinitions = {
@@ -178,10 +178,10 @@ const settingDefinitions = {
 export async function saveSettingAction(formData: FormData) {
   const admin = await getAdminContext();
   if (!admin) redirect("/admin/login");
-  if (admin.role !== "owner") redirect("/admin?error=access#settings");
+  if (admin.role !== "owner") redirect("/admin/settings?error=access");
   const key = readText(formData, "key", 80) as keyof typeof settingDefinitions | null;
   const raw = readText(formData, "value", 2000);
-  if (!key || !Object.hasOwn(settingDefinitions, key) || raw === null) redirect("/admin?error=settings#settings");
+  if (!key || !Object.hasOwn(settingDefinitions, key) || raw === null) redirect("/admin/settings?error=settings");
 
   let value: Json;
   const kind = settingDefinitions[key];
@@ -192,17 +192,17 @@ export async function saveSettingAction(formData: FormData) {
   } else {
     const numeric = Number(raw);
     if (!Number.isFinite(numeric) || numeric < 0 || (kind === "integer" && !Number.isSafeInteger(numeric)) || (key === "deposit_percent" && numeric > 100)) {
-      redirect("/admin?error=settings#settings");
+      redirect("/admin/settings?error=settings");
     }
     value = numeric;
   }
 
   const { data: oldRow } = await admin.supabase.from("settings").select("*").eq("key", key).maybeSingle();
   const { error } = await admin.supabase.from("settings").upsert({ key, value, updated_by: admin.userId }, { onConflict: "key" });
-  if (error) redirect("/admin?error=settings#settings");
+  if (error) redirect("/admin/settings?error=settings");
   await logChange(admin.supabase, admin.userId, "settings", key, oldRow as unknown as Json ?? null, { key, value, updated_by: admin.userId });
   revalidatePath("/", "layout");
-  redirect("/admin?saved=settings#settings");
+  redirect("/admin/settings?saved=settings");
 }
 
 export async function updateBookingStatusAction(formData: FormData) {
@@ -210,18 +210,18 @@ export async function updateBookingStatusAction(formData: FormData) {
   if (!admin) redirect("/admin/login");
   const id = readText(formData, "booking_id", 64);
   const action = readText(formData, "booking_action", 32);
-  if (!id || !action || !["approve", "decline", "paid", "cancel", "complete"].includes(action)) redirect("/admin?error=booking#bookings");
+  if (!id || !action || !["approve", "decline", "paid", "cancel", "complete"].includes(action)) redirect("/admin/bookings?error=booking");
 
   await expireUnpaidHolds();
   const { data: oldRow, error: readError } = await admin.supabase.from("bookings").select("*").eq("id", id).maybeSingle();
-  if (readError || !oldRow) redirect("/admin?error=booking#bookings");
+  if (readError || !oldRow) redirect("/admin/bookings?error=booking");
   let status: "awaiting_payment" | "confirmed" | "cancelled" | "completed";
   let update: Partial<Database["public"]["Tables"]["bookings"]["Update"]> = {};
   if (action === "approve") {
-    if (oldRow.status !== "pending") redirect("/admin?error=booking#bookings");
+    if (oldRow.status !== "pending") redirect("/admin/bookings?error=booking");
     const { data: deadlineSetting } = await admin.supabase.from("settings").select("value").eq("key", "payment_deadline_hours").maybeSingle();
     const hours = typeof deadlineSetting?.value === "number" ? deadlineSetting.value : null;
-    if (hours === null || hours <= 0 || hours > 24 * 30) redirect("/admin?error=deadline#settings");
+    if (hours === null || hours <= 0 || hours > 24 * 30) redirect("/admin/settings?error=deadline");
     const { data: depositAmount } = await admin.supabase.from("settings").select("value").eq("key", "deposit_amount").maybeSingle();
     const { data: depositPercent } = await admin.supabase.from("settings").select("value").eq("key", "deposit_percent").maybeSingle();
     const fixedDeposit = typeof depositAmount?.value === "number" ? depositAmount.value : null;
@@ -231,26 +231,26 @@ export async function updateBookingStatusAction(formData: FormData) {
     status = "awaiting_payment";
     update = { status, deposit_required: deposit, payment_deadline: deadline, hold_expires_at: deadline };
   } else if (action === "decline" || action === "cancel") {
-    if (oldRow.status === "completed" || oldRow.status === "cancelled") redirect("/admin?error=booking#bookings");
+    if (oldRow.status === "completed" || oldRow.status === "cancelled") redirect("/admin/bookings?error=booking");
     status = "cancelled";
     update = { status, hold_expires_at: null };
   } else if (action === "paid") {
-    if (oldRow.status !== "awaiting_payment") redirect("/admin?error=booking#bookings");
+    if (oldRow.status !== "awaiting_payment") redirect("/admin/bookings?error=booking");
     status = "confirmed";
     update = { status, hold_expires_at: null };
   } else {
-    if (oldRow.status !== "confirmed") redirect("/admin?error=booking#bookings");
+    if (oldRow.status !== "confirmed") redirect("/admin/bookings?error=booking");
     status = "completed";
     update = { status, hold_expires_at: null };
   }
 
   const { error } = await admin.supabase.from("bookings").update(update).eq("id", id);
-  if (error) redirect(`/admin?error=${error.code === "23P01" ? "conflict" : "booking"}#bookings`);
+  if (error) redirect(`/admin/bookings?error=${error.code === "23P01" ? "conflict" : "booking"}`);
   await logChange(admin.supabase, admin.userId, "bookings", id, oldRow as unknown as Json, update as unknown as Json);
   await sendBookingStatusEmail(oldRow, status);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=booking#bookings");
+  redirect("/admin/bookings?saved=booking");
 }
 
 function validDateText(value: string | null): value is string {
@@ -287,20 +287,20 @@ export async function createManualBookingAction(formData: FormData) {
     manualTotal === undefined || corkage.invalid || (kind !== "exclusive" && visit !== "day-tour" && visit !== "overnight") ||
     (kind === "unit" && (unitIds.length < 1 || unitIds.length > 10))
   ) {
-    redirect("/admin?error=manual#bookings");
+    redirect("/admin/bookings?error=manual");
   }
   const days = dayCount(date, dateEnd);
-  if (days < 1 || days > 60) redirect("/admin?error=manual#bookings");
+  if (days < 1 || days > 60) redirect("/admin/bookings?error=manual");
   // The checks above only accept these values, but TypeScript cannot carry that through the long condition.
   const bookingKind = kind as "exclusive" | "unit" | "entrance";
   const bookingStatus = status as "confirmed" | "pending";
   // Checking a guest in straight away is for walk-ins: a confirmed booking that starts today.
-  if (checkInNow && (status !== "confirmed" || date !== manilaToday())) redirect("/admin?error=checkin#logbook");
+  if (checkInNow && (status !== "confirmed" || date !== manilaToday())) redirect("/admin/logbook?error=checkin");
 
   if (kind === "exclusive") {
-    if (!packageId) redirect("/admin?error=manual#bookings");
+    if (!packageId) redirect("/admin/bookings?error=manual");
     const { data: item } = await admin.supabase.from("packages").select("id,scope").eq("id", packageId).maybeSingle();
-    if (!item || item.scope !== "exclusive") redirect("/admin?error=manual#bookings");
+    if (!item || item.scope !== "exclusive") redirect("/admin/bookings?error=manual");
   }
 
   await expireUnpaidHolds();
@@ -309,7 +309,7 @@ export async function createManualBookingAction(formData: FormData) {
     admin.supabase.from("bookings").select("id,type,unit_ids,status,hold_expires_at,date_start,date_end").lte("date_start", dateEnd).gte("date_end", date).not("status", "in", "(cancelled,completed)"),
   ]);
   const conflicts = findConflicts({ kind: bookingKind, start: date, end: dateEnd, unitIds, bookings: existing ?? [], blockedDates: (blocked ?? []).map((row) => row.date) });
-  if (conflicts.length) redirect("/admin?error=manual#bookings");
+  if (conflicts.length) redirect("/admin/bookings?error=manual");
 
   const visitType = kind === "exclusive" ? null : (visit as "day-tour" | "overnight");
   const priced = await priceBooking(
@@ -317,7 +317,7 @@ export async function createManualBookingAction(formData: FormData) {
     { type: bookingKind, package_id: kind === "exclusive" ? packageId : null, unit_ids: unitIds, date_start: date, date_end: dateEnd, visit_type: visitType, price_breakdown: null },
     { adults, children, corkage: corkage.items, useSnapshot: false },
   );
-  if (!priced) redirect("/admin?error=price#bookings");
+  if (!priced) redirect("/admin/bookings?error=price");
   const { total, overridden } = resolveTotal(priced.total, manualTotal);
 
   const record = {
@@ -346,15 +346,15 @@ export async function createManualBookingAction(formData: FormData) {
     guest_uid: null,
   };
   const { data, error } = await admin.supabase.from("bookings").insert(record).select("id").single();
-  if (error || !data) redirect("/admin?error=manual#bookings");
+  if (error || !data) redirect("/admin/bookings?error=manual");
   await logChange(admin.supabase, admin.userId, "bookings", data.id, null, record as unknown as Json);
   if (checkInNow) {
     const { error: logError } = await admin.supabase.from("guest_log").insert({ booking_id: data.id, actual_adults: adults, actual_children: children, checked_in_by: admin.userId });
-    if (logError) redirect("/admin?error=checkin#logbook");
+    if (logError) redirect("/admin/logbook?error=checkin");
   }
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect(checkInNow ? "/admin?saved=checkin#logbook" : "/admin?saved=manual#bookings");
+  redirect(checkInNow ? "/admin/logbook?saved=checkin" : `/admin/bookings?saved=manual&receipt=${data.id}`);
 }
 
 // Logbook: a guest arrives. The stay must cover today and be confirmed or awaiting payment.
@@ -364,15 +364,15 @@ export async function checkInAction(formData: FormData) {
   const id = readText(formData, "booking_id", 64);
   const adults = readInteger(formData, "adults");
   const children = readInteger(formData, "children");
-  if (!id || typeof adults !== "number" || typeof children !== "number" || adults > 1000 || children > 1000 || adults + children < 1) redirect("/admin?error=checkin#logbook");
+  if (!id || typeof adults !== "number" || typeof children !== "number" || adults > 1000 || children > 1000 || adults + children < 1) redirect("/admin/logbook?error=checkin");
   const today = manilaToday();
   const { data: booking } = await admin.supabase.from("bookings").select("id,status,date_start,date_end").eq("id", id).maybeSingle();
-  if (!booking || (booking.status !== "confirmed" && booking.status !== "awaiting_payment") || booking.date_start > today || booking.date_end < today) redirect("/admin?error=checkin#logbook");
+  if (!booking || (booking.status !== "confirmed" && booking.status !== "awaiting_payment") || booking.date_start > today || booking.date_end < today) redirect("/admin/logbook?error=checkin");
   const { data, error } = await admin.supabase.from("guest_log").insert({ booking_id: id, actual_adults: adults, actual_children: children, checked_in_by: admin.userId }).select("id").single();
-  if (error || !data) redirect(`/admin?error=${error?.code === "23505" ? "alreadyIn" : "checkin"}#logbook`);
+  if (error || !data) redirect(`/admin/logbook?error=${error?.code === "23505" ? "alreadyIn" : "checkin"}`);
   await logChange(admin.supabase, admin.userId, "guest_log", data.id, null, { booking_id: id, actual_adults: adults, actual_children: children });
-  revalidatePath("/admin");
-  redirect("/admin?saved=checkin#logbook");
+  revalidatePath("/admin", "layout");
+  redirect("/admin/logbook?saved=checkin");
 }
 
 // Logbook: a guest leaves. When it is the last day of a confirmed stay, the booking is marked completed too.
@@ -380,11 +380,11 @@ export async function checkOutAction(formData: FormData) {
   const admin = await getAdminContext();
   if (!admin) redirect("/admin/login");
   const id = readText(formData, "log_id", 64);
-  if (!id) redirect("/admin?error=checkin#logbook");
+  if (!id) redirect("/admin/logbook?error=checkin");
   const { data: entry } = await admin.supabase.from("guest_log").select("id,booking_id,checked_out_at").eq("id", id).maybeSingle();
-  if (!entry || entry.checked_out_at !== null) redirect("/admin?error=checkin#logbook");
+  if (!entry || entry.checked_out_at !== null) redirect("/admin/logbook?error=checkin");
   const { error } = await admin.supabase.from("guest_log").update({ checked_out_at: new Date().toISOString() }).eq("id", id).is("checked_out_at", null);
-  if (error) redirect("/admin?error=checkin#logbook");
+  if (error) redirect("/admin/logbook?error=checkin");
   await logChange(admin.supabase, admin.userId, "guest_log", id, entry as unknown as Json, { checked_out: true });
   const { data: booking } = await admin.supabase.from("bookings").select("id,status,date_end").eq("id", entry.booking_id).maybeSingle();
   if (booking && booking.status === "confirmed" && booking.date_end <= manilaToday()) {
@@ -392,9 +392,9 @@ export async function checkOutAction(formData: FormData) {
     const { error: completeError } = await admin.supabase.from("bookings").update(update).eq("id", booking.id);
     if (!completeError) await logChange(admin.supabase, admin.userId, "bookings", booking.id, { status: booking.status }, update as unknown as Json);
   }
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=checkout#logbook");
+  redirect("/admin/logbook?saved=checkout");
 }
 
 // End of day: saves the report as it stands, so later price edits never change a closed day.
@@ -430,16 +430,16 @@ function readStrings(formData: FormData, name: string, max: number) {
 export async function saveCorkagePresetsAction(formData: FormData) {
   const admin = await getAdminContext();
   if (!admin) redirect("/admin/login");
-  if (admin.role !== "owner") redirect("/admin?error=access#settings");
+  if (admin.role !== "owner") redirect("/admin/settings?error=access");
   const parsed = parseCorkageRows(readStrings(formData, "corkage_label", 200), readStrings(formData, "corkage_amount", 40));
-  if (parsed.invalid) redirect("/admin?error=settings#settings");
+  if (parsed.invalid) redirect("/admin/settings?error=settings");
   const value = parsed.items as unknown as Json;
   const { data: oldRow } = await admin.supabase.from("settings").select("*").eq("key", "corkage_presets").maybeSingle();
   const { error } = await admin.supabase.from("settings").upsert({ key: "corkage_presets", value, updated_by: admin.userId }, { onConflict: "key" });
-  if (error) redirect("/admin?error=settings#settings");
+  if (error) redirect("/admin/settings?error=settings");
   await logChange(admin.supabase, admin.userId, "settings", "corkage_presets", (oldRow as unknown as Json) ?? null, { key: "corkage_presets", value, updated_by: admin.userId });
   revalidatePath("/", "layout");
-  redirect("/admin?saved=settings#settings");
+  redirect("/admin/settings?saved=settings");
 }
 
 // Fixes guest details, headcount, corkage and the total. The total is only recalculated from current prices on request,
@@ -457,17 +457,17 @@ export async function editBookingAction(formData: FormData) {
   const recalc = formData.get("recalc") === "on";
   const corkage = parseCorkageRows(readStrings(formData, "corkage_label", 200), readStrings(formData, "corkage_amount", 40));
   if (!id || !guestName || !phone || phone.length < 7 || notes === null || typeof adults !== "number" || typeof children !== "number" || adults > 1000 || children > 1000 || adults + children < 1 || corkage.invalid || total === undefined || (!recalc && total === null)) {
-    redirect("/admin?error=booking#bookings");
+    redirect("/admin/bookings?error=booking");
   }
 
   const { data: oldRow, error: readError } = await admin.supabase.from("bookings").select("*").eq("id", id).maybeSingle();
-  if (readError || !oldRow) redirect("/admin?error=booking#bookings");
+  if (readError || !oldRow) redirect("/admin/bookings?error=booking");
   let nextTotal = oldRow.total_amount;
   let breakdown: Json | null = oldRow.price_breakdown;
   let overridden = oldRow.total_overridden;
   if (recalc) {
     const priced = await priceBooking(admin.supabase, oldRow, { adults, children, corkage: corkage.items, useSnapshot: false });
-    if (!priced) redirect("/admin?error=price#bookings");
+    if (!priced) redirect("/admin/bookings?error=price");
     nextTotal = priced.total;
     breakdown = priced as unknown as Json;
     overridden = false;
@@ -481,11 +481,11 @@ export async function editBookingAction(formData: FormData) {
     total_amount: nextTotal, price_breakdown: breakdown, total_overridden: overridden,
   };
   const { error } = await admin.supabase.from("bookings").update(update).eq("id", id);
-  if (error) redirect("/admin?error=booking#bookings");
+  if (error) redirect("/admin/bookings?error=booking");
   await logChange(admin.supabase, admin.userId, "bookings", id, oldRow as unknown as Json, update as unknown as Json);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=booking#bookings");
+  redirect("/admin/bookings?saved=booking");
 }
 
 // Adds days to the end of a room stay when the following days are free. The total grows by the extra days at the booking's own rates.
@@ -494,11 +494,11 @@ export async function extendBookingAction(formData: FormData) {
   if (!admin) redirect("/admin/login");
   const id = readText(formData, "booking_id", 64);
   const extraDays = readInteger(formData, "extra_days");
-  if (!id || typeof extraDays !== "number" || extraDays < 1 || extraDays > 14) redirect("/admin?error=extend#bookings");
+  if (!id || typeof extraDays !== "number" || extraDays < 1 || extraDays > 14) redirect("/admin/bookings?error=extend");
 
   await expireUnpaidHolds();
   const { data: booking, error: readError } = await admin.supabase.from("bookings").select("*").eq("id", id).maybeSingle();
-  if (readError || !booking || booking.type !== "unit" || (booking.status !== "confirmed" && booking.status !== "awaiting_payment")) redirect("/admin?error=extend#bookings");
+  if (readError || !booking || booking.type !== "unit" || (booking.status !== "confirmed" && booking.status !== "awaiting_payment")) redirect("/admin/bookings?error=extend");
 
   const newEnd = addDays(booking.date_end, extraDays);
   const [{ data: others }, { data: blocked }] = await Promise.all([
@@ -507,7 +507,7 @@ export async function extendBookingAction(formData: FormData) {
     admin.supabase.from("blocked_dates").select("date").gte("date", addDays(booking.date_end, 1)).lte("date", newEnd),
   ]);
   const check = checkExtension({ booking, extraDays, bookings: others ?? [], blockedDates: (blocked ?? []).map((row) => row.date) });
-  if (!check.ok) redirect("/admin?error=extendConflict#bookings");
+  if (!check.ok) redirect("/admin/bookings?error=extendConflict");
 
   const common = { adults: booking.adults, children: booking.children, corkage: normalizeCorkageItems(booking.corkage_items), useSnapshot: true };
   const oldDays = dayCount(booking.date_start, booking.date_end);
@@ -515,18 +515,18 @@ export async function extendBookingAction(formData: FormData) {
     priceBooking(admin.supabase, booking, { ...common, days: oldDays }),
     priceBooking(admin.supabase, booking, { ...common, days: oldDays + extraDays }),
   ]);
-  if (!before || !after) redirect("/admin?error=price#bookings");
+  if (!before || !after) redirect("/admin/bookings?error=price");
   const update = {
     date_end: check.newEnd,
     total_amount: Math.round((booking.total_amount + (after.total - before.total)) * 100) / 100,
     price_breakdown: after as unknown as Json,
   };
   const { error } = await admin.supabase.from("bookings").update(update).eq("id", id);
-  if (error) redirect(`/admin?error=${error.code === "23P01" ? "extendConflict" : "extend"}#bookings`);
+  if (error) redirect(`/admin/bookings?error=${error.code === "23P01" ? "extendConflict" : "extend"}`);
   await logChange(admin.supabase, admin.userId, "bookings", id, booking as unknown as Json, update as unknown as Json);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=extended#bookings");
+  redirect("/admin/bookings?saved=extended");
 }
 
 export async function addBlockedDateAction(formData: FormData) {
@@ -535,19 +535,19 @@ export async function addBlockedDateAction(formData: FormData) {
 
   const date = readText(formData, "date", 10);
   const reasonInput = readText(formData, "reason", 120);
-  if (!validDateText(date) || reasonInput === null) redirect("/admin?error=blocked#blocked-dates");
+  if (!validDateText(date) || reasonInput === null) redirect("/admin/blocked-dates?error=blocked");
   const reason = reasonInput || "closed";
 
   const { data: clash } = await admin.supabase.from("bookings").select("id")
     .lte("date_start", date).gte("date_end", date).in("status", ["awaiting_payment", "confirmed"]).limit(1);
-  if (clash && clash.length > 0) redirect("/admin?error=blockedConflict#blocked-dates");
+  if (clash && clash.length > 0) redirect("/admin/blocked-dates?error=blockedConflict");
 
   const { data, error } = await admin.supabase.from("blocked_dates").insert({ date, reason, created_by: admin.userId }).select("id").single();
-  if (error || !data) redirect(`/admin?error=${error?.code === "23505" ? "blockedExists" : "blocked"}#blocked-dates`);
+  if (error || !data) redirect(`/admin/blocked-dates?error=${error?.code === "23505" ? "blockedExists" : "blocked"}`);
   await logChange(admin.supabase, admin.userId, "blocked_dates", data.id, null, { date, reason });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=blocked#blocked-dates");
+  redirect("/admin/blocked-dates?saved=blocked");
 }
 
 export async function removeBlockedDateAction(formData: FormData) {
@@ -555,13 +555,13 @@ export async function removeBlockedDateAction(formData: FormData) {
   if (!admin) redirect("/admin/login");
 
   const id = readText(formData, "id", 64);
-  if (!id) redirect("/admin?error=blocked#blocked-dates");
+  if (!id) redirect("/admin/blocked-dates?error=blocked");
   const { data: oldRow } = await admin.supabase.from("blocked_dates").select("*").eq("id", id).maybeSingle();
-  if (!oldRow) redirect("/admin?error=blocked#blocked-dates");
+  if (!oldRow) redirect("/admin/blocked-dates?error=blocked");
   const { error } = await admin.supabase.from("blocked_dates").delete().eq("id", id);
-  if (error) redirect("/admin?error=blocked#blocked-dates");
+  if (error) redirect("/admin/blocked-dates?error=blocked");
   await logChange(admin.supabase, admin.userId, "blocked_dates", id, oldRow as unknown as Json, { removed: true });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
-  redirect("/admin?saved=blocked#blocked-dates");
+  redirect("/admin/blocked-dates?saved=blocked");
 }

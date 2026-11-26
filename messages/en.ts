@@ -3,7 +3,7 @@ const messages = {
     label: "Main navigation", packages: "Packages", stay: "Cottages & rooms", schedule: "Availability", findUs: "Find us", store: "Store & bar", contact: "Contact",
   },
   actions: {
-    book: "Book now", explore: "Explore", chat: "Chat with us", language: "Choose language", openMenu: "Open menu", closeMenu: "Close menu", quickActions: "Quick actions", previousSlide: "Previous slide", nextSlide: "Next slide", chooseSlide: "Choose a slide", showSlide: "Show slide",
+    book: "Book now", explore: "Explore", chat: "Chat with us", facebookPage: "Facebook page", language: "Choose language", openMenu: "Open menu", closeMenu: "Close menu", quickActions: "Quick actions", previousSlide: "Previous slide", nextSlide: "Next slide", chooseSlide: "Choose a slide", showSlide: "Show slide",
   },
   common: { skipToContent: "Skip to main content", homeLabel: "Netibo sa Samal home" },
   chat: {

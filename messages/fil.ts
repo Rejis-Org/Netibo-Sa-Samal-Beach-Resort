@@ -1,7 +1,7 @@
 // TODO: Machine-drafted Tagalog. Have a native speaker review before launch.
 const messages = {
   navigation: { label: "Pangunahing menu", packages: "Mga package", stay: "Mga cottage at kuwarto", schedule: "Availability", findUs: "Paano pumunta", store: "Tindahan at bar", contact: "Kontak" },
-  actions: { book: "Mag-book ngayon", explore: "Tingnan", chat: "Makipag-chat sa amin", language: "Pumili ng wika", openMenu: "Buksan ang menu", closeMenu: "Isara ang menu", quickActions: "Mabilis na aksyon", previousSlide: "Naunang slide", nextSlide: "Susunod na slide", chooseSlide: "Pumili ng slide", showSlide: "Ipakita ang slide" },
+  actions: { book: "Mag-book ngayon", explore: "Tingnan", chat: "Makipag-chat sa amin", facebookPage: "Facebook page", language: "Pumili ng wika", openMenu: "Buksan ang menu", closeMenu: "Isara ang menu", quickActions: "Mabilis na aksyon", previousSlide: "Naunang slide", nextSlide: "Susunod na slide", chooseSlide: "Pumili ng slide", showSlide: "Ipakita ang slide" },
   common: { skipToContent: "Lumaktaw sa pangunahing nilalaman", homeLabel: "Home ng Netibo sa Samal" },
   chat: {
     eyebrow: "Netibo sa Samal", title: "Makipag-chat sa resort", open: "Chat", close: "Isara ang chat", online: "Live na suporta", connecting: "Kumokonekta…",

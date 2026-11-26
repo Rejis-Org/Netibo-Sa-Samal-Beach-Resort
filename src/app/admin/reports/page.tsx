@@ -36,7 +36,7 @@ export default async function DailyReportPage({ searchParams }: Props) {
     <main className="admin-shell report-page">
       <header className="admin-topbar no-print">
         <div><p className="eyebrow">Netibo sa Samal</p><h1>Daily report</h1></div>
-        <div className="admin-account"><Link href="/admin#logbook">← Back to the logbook</Link></div>
+        <div className="admin-account"><Link href="/admin/logbook">← Back to the logbook</Link></div>
       </header>
       {saved && <p className="admin-message admin-message-success no-print">The day was closed and saved.</p>}
       {error && <p className="admin-message admin-message-error no-print">That report could not be saved. Check the date and try again.</p>}

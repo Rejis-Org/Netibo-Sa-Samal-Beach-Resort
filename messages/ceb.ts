@@ -1,7 +1,7 @@
 // TODO: Machine-drafted Cebuano. Have a native speaker review before launch.
 const messages = {
   navigation: { label: "Pangunang menu", packages: "Mga package", stay: "Mga cottage ug kwarto", schedule: "Availability", findUs: "Asa kami", store: "Tindahan ug bar", contact: "Kontak" },
-  actions: { book: "Pag-book karon", explore: "Tan-awa", chat: "Pakig-chat kanamo", language: "Pilia ang pinulongan", openMenu: "Ablihi ang menu", closeMenu: "Siradohi ang menu", quickActions: "Paspas nga mga aksyon", previousSlide: "Niaging slide", nextSlide: "Sunod nga slide", chooseSlide: "Pilia ang slide", showSlide: "Ipakita ang slide" },
+  actions: { book: "Pag-book karon", explore: "Tan-awa", chat: "Pakig-chat kanamo", facebookPage: "Facebook page", language: "Pilia ang pinulongan", openMenu: "Ablihi ang menu", closeMenu: "Siradohi ang menu", quickActions: "Paspas nga mga aksyon", previousSlide: "Niaging slide", nextSlide: "Sunod nga slide", chooseSlide: "Pilia ang slide", showSlide: "Ipakita ang slide" },
   common: { skipToContent: "Laktawi ang pangunang sulod", homeLabel: "Home sa Netibo sa Samal" },
   chat: {
     eyebrow: "Netibo sa Samal", title: "Pakig-chat sa resort", open: "Chat", close: "Sirad-i ang chat", online: "Live nga suporta", connecting: "Nagkonektar…",

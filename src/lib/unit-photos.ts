@@ -54,18 +54,26 @@ const unitPhotoFiles: Record<string, readonly string[]> = {
     "costa-blaize/costa-blaize-04-landscape.jpg",
     "costa-blaize/costa-blaize-02-portrait.jpg",
   ],
-  "Umbrella Kubo": [
+  // Identified from the photos: 1 = beach-edge kubo with the net hammock (05, 06), 2 = kubo on the white concrete base with the vine pole (02, 03),
+  // 3 = kubo with the table built around the pole (04), 4 = curtained kubo with the net hammock in front (01).
+  "Umbrella Kubo 1": [
     "cottage/cottage-05-landscape.jpg",
     "cottage/cottage-06-landscape.jpg",
-    "cottage/cottage-01-portrait.jpg",
+  ],
+  "Umbrella Kubo 2": [
     "cottage/cottage-02-portrait.jpg",
     "cottage/cottage-03-portrait.jpg",
+  ],
+  "Umbrella Kubo 3": [
     "cottage/cottage-04-portrait.jpg",
+  ],
+  "Umbrella Kubo 4": [
+    "cottage/cottage-01-portrait.jpg",
   ],
 };
 
 // Older database rows may still use the previous unit name.
-const unitNameAliases: Record<string, string> = { Alexa: "Cozy Alexa" };
+const unitNameAliases: Record<string, string> = { Alexa: "Cozy Alexa", "Umbrella Kubo": "Umbrella Kubo 1" };
 
 export function getUnitPhotos(name: string) {
   return (unitPhotoFiles[unitNameAliases[name] ?? name] ?? []).map((file) => `/images/${file}`);

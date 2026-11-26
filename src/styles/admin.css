@@ -119,6 +119,50 @@
 .admin-booking-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-booking-actions .button { min-height: 42px; padding-inline: 16px; border: 0; cursor: pointer; }
 .admin-booking-actions .button-outline { border: 1px solid #c9ddd9; background: white; color: #385653; }
+.admin-grid-toolbar { margin-bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.admin-grid-toolbar a { color: var(--ocean); font-size: 13px; font-weight: 900; }
+.admin-grid-scroll { overflow-x: auto; border: 1px solid #d6e5e2; border-radius: 16px; background: white; }
+.admin-grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+.admin-grid th, .admin-grid td { padding: 7px 8px; border: 1px solid #e3eeec; text-align: center; white-space: nowrap; }
+.admin-grid thead th { background: #f7fbfa; color: #4a6663; font-weight: 900; }
+.admin-grid tbody th { position: sticky; left: 0; z-index: 1; min-width: 130px; background: #f7fbfa; text-align: left; font-weight: 900; }
+.admin-grid thead th:first-child { position: sticky; left: 0; z-index: 2; text-align: left; }
+.admin-grid .admin-grid-today { background: #fff4cf; }
+.admin-cell-free { background: #edf7ee; color: #2f6b3d; }
+.admin-cell-booked { background: #fbe9e4; color: #843c2a; font-weight: 900; }
+.admin-cell-exclusive { background: #f2dcd5; color: #843c2a; font-weight: 900; }
+.admin-cell-held { background: #e0f2ef; color: #137b72; font-weight: 900; }
+.admin-cell-requested { background: #fff2c9; color: #735807; }
+.admin-cell-closed { background: #e8ecec; color: #566; }
+.admin-booking-extend { margin-top: 14px; padding-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-top: 1px dashed #d6e5e2; }
+.admin-booking-extend label { display: flex; align-items: center; gap: 8px; color: #4a6663; font-size: 13px; font-weight: 900; }
+.admin-booking-extend input { width: 76px; min-height: 40px; padding: 8px 10px; border: 1px solid #c9ddd9; border-radius: 10px; }
+.admin-booking-extend .button { min-height: 40px; padding-inline: 14px; border: 0; cursor: pointer; }
+.admin-booking-edit { margin-top: 12px; box-shadow: none; }
+.admin-corkage-rows { display: grid; gap: 8px; }
+.admin-corkage-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 8px; }
+.admin-flag { padding: 3px 8px; border-radius: 999px; background: #fff2c9; color: #735807; font-size: 10px; font-weight: 1000; }
+.admin-subheading { margin: 18px 0 2px; font: 800 20px/1.1 var(--font-heading), sans-serif; }
+.admin-unit-picker { margin: 0; padding: 12px; display: grid; gap: 6px; border: 1px solid #d6e5e2; border-radius: 12px; }
+.admin-unit-picker legend { padding-inline: 6px; color: #4a6663; font-size: 12px; font-weight: 900; }
+.admin-unit-taken { opacity: .55; }
+.admin-price-breakdown { margin: 0; padding: 0; display: grid; gap: 6px; list-style: none; }
+.admin-price-breakdown li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #e3eeec; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.report-toolbar { margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.report-toolbar a:not(.button) { color: var(--ocean); font-size: 13px; font-weight: 900; }
+.report-toolbar .button { min-height: 42px; padding-inline: 16px; cursor: pointer; }
+.report-date-form { display: flex; gap: 8px; }
+.report-date-form input { min-height: 42px; padding: 8px 10px; border: 1px solid #c9ddd9; border-radius: 10px; }
+.report-table td, .report-table th { text-align: left; white-space: normal; }
+.report-close { margin-top: 22px; display: grid; gap: 8px; justify-items: start; }
+.report-close .button { border: 0; cursor: pointer; }
+@media print {
+  .no-print, .admin-nav { display: none !important; }
+  .admin-shell { width: 100%; padding: 0; }
+  .admin-section { break-inside: avoid; }
+  .admin-grid-scroll { overflow: visible; border-radius: 0; }
+  .admin-cell-booked, .admin-cell-free { background: none; color: inherit; }
+}
 
 @media (max-width: 640px) {
   .admin-shell { width: calc(100% - 28px); padding-top: 16px; }
@@ -220,4 +264,25 @@
   .admin-summary-grid a { min-height: 104px; padding: 15px; }
   .admin-summary-grid strong { font-size: 27px; }
   .admin-quick-actions { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== Daily report page (standalone page with its own header) ===== */
+.report-page .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 18px 0; }
+.report-page .admin-topbar .eyebrow { margin-bottom: 5px; }
+.report-page .admin-topbar h1 { margin: 0; font-size: clamp(30px, 5vw, 42px); line-height: 1.05; }
+.report-page .admin-account { display: flex; align-items: center; gap: 20px; color: #53706d; font-size: 13px; }
+.report-page .admin-summary-grid { margin-block: 22px 42px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.report-page .admin-summary-grid article { min-height: 96px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #d7e6e3; border-radius: 17px; background: white; }
+.report-page .admin-section { padding-top: 12px; margin-top: 38px; }
+.report-page .admin-section-heading { margin-bottom: 18px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.report-page .admin-section-heading .eyebrow { margin-bottom: 4px; }
+.report-page .admin-section-heading h2 { margin: 0; font-size: clamp(27px, 4vw, 35px); }
+.report-page .admin-section-heading > p { max-width: 400px; margin: 0; color: #5c7773; font-size: 13px; line-height: 1.55; }
+@media print { .report-page .admin-section { break-inside: avoid; } }
+@media (max-width: 760px) {
+  .report-page .admin-topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .report-page .admin-account { width: 100%; justify-content: space-between; }
+  .report-page .admin-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 30px; }
+  .report-page .admin-summary-grid article:last-child { grid-column: 1 / -1; min-height: 70px; }
+  .report-page .admin-section-heading { align-items: flex-start; flex-direction: column; gap: 7px; }
 }

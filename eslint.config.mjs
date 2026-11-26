@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party minified bundles and a one-off colour-migration script, not app code.
+    "public/vendor/**",
+    ".palette-swap.cjs",
   ]),
 ]);
 

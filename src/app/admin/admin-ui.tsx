@@ -18,6 +18,19 @@ export const errorMessages: Record<string, string> = {
   blocked: "That closed date could not be saved or removed. Check it and try again.",
   blockedExists: "That date is already closed.",
   blockedConflict: "That date already has an approved or confirmed booking. Cancel that booking first.",
+  extend: "That stay could not be extended. Only confirmed or awaiting-payment room bookings can be extended.",
+  extendConflict: "Those extra days are already booked or closed, so the stay was not extended.",
+  price: "The price could not be calculated because a price or entrance fee is missing. Check the catalog and try again.",
+  checkin: "That check-in or check-out could not be saved. Refresh the logbook and try again.",
+  alreadyIn: "That booking is already checked in.",
+};
+
+const savedMessages: Record<string, string> = {
+  manual: "Booking saved. The date is now on the calendar.",
+  booking: "Booking updated.",
+  extended: "The stay was extended.",
+  checkin: "Guest checked in.",
+  checkout: "Guest checked out.",
 };
 
 export type Flash = { error?: string; saved?: string; receipt?: string };
@@ -54,7 +67,7 @@ export function AdminPageFrame({ section, flash, loadFailed, children }: FramePr
       <div className="admin-content">
         {flash?.saved && (
           <p className="admin-message admin-message-success">
-            {flash.saved === "manual" ? "Booking saved. The date is now on the calendar." : "Changes saved. The public pages now show the latest catalog."}
+            {savedMessages[flash.saved] ?? "Changes saved. The public pages now show the latest catalog."}
             {receiptId && <> <a className="admin-message-link" href={`/admin/receipt/${receiptId}`} target="_blank" rel="noopener noreferrer">Open the receipt</a></>}
           </p>
         )}

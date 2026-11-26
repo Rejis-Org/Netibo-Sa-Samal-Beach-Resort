@@ -24,7 +24,7 @@ begin
       join pg_namespace n on n.oid = c.relnamespace
       where p.pubname = 'supabase_realtime'
         and n.nspname = 'public'
-        and c.relname in ('messages', 'conversations', 'bookings')
+        and c.relname in ('messages', 'conversations', 'bookings', 'guest_log')
     loop
       execute 'alter publication supabase_realtime drop table ' || relation.qualified_name;
     end loop;
@@ -32,6 +32,8 @@ begin
 end $$;
 
 drop table if exists public.messages cascade;
+drop table if exists public.guest_log cascade;
+drop table if exists public.daily_reports cascade;
 drop table if exists public.conversations cascade;
 drop table if exists public.payments cascade;
 drop table if exists public.bookings cascade;
@@ -43,6 +45,7 @@ drop table if exists public.audit_log cascade;
 drop table if exists public.user_roles cascade;
 
 drop function if exists public.get_public_availability(date, date);
+drop function if exists public.get_unit_availability(date, date);
 drop function if exists public.mark_messages_read(uuid);
 drop function if exists public.get_or_create_guest_conversation(text, text);
 drop function if exists public.add_booking_to_guest_chat();

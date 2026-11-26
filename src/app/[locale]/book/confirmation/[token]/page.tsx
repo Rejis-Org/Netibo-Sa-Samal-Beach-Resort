@@ -13,10 +13,12 @@ export default async function BookingConfirmationPage({ params }: Props) {
   const [{ token }, t] = await Promise.all([params, getTranslations("pages.bookingFlow.confirmation")]);
   if (!/^[a-f0-9]{48,80}$/i.test(token)) notFound();
   const { data } = await createSupabaseServiceClient().from("bookings")
-    .select("ref_code,date_start,status,total_amount")
+    .select("ref_code,date_start,date_end,status,total_amount")
     .eq("access_token", token).maybeSingle();
   if (!data) notFound();
-  const date = new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" }).format(new Date(`${data.date_start}T12:00:00+08:00`));
+  const formatter = new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" });
+  const startLabel = formatter.format(new Date(`${data.date_start}T12:00:00+08:00`));
+  const date = data.date_end > data.date_start ? `${startLabel} – ${formatter.format(new Date(`${data.date_end}T12:00:00+08:00`))}` : startLabel;
   return <section className="page-section page-container">
     <article className="booking-confirmation">
       <span className="confirmation-icon" aria-hidden="true"><CheckIcon size={28} strokeWidth={2.75} /></span>

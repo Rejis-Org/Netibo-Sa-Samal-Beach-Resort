@@ -463,7 +463,7 @@ create policy "owner manages settings" on public.settings for all to authenticat
 drop policy if exists "public reads resort phone" on public.settings;
 drop policy if exists "public settings are readable" on public.settings;
 create policy "public settings are readable" on public.settings for select to anon, authenticated using (
-  key in ('contact_phone', 'reply_time_hours', 'day_tour_start', 'overnight_start', 'arrival_directions', 'extra_guest_fee')
+  key in ('contact_phone', 'reply_time_hours', 'day_tour_start', 'overnight_start', 'arrival_directions', 'extra_guest_fee', 'corkage_presets')
 );
 drop policy if exists "admins manage bookings" on public.bookings;
 create policy "admins manage bookings" on public.bookings for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
@@ -610,5 +610,112 @@ drop policy if exists "admins manage unit photos" on storage.objects;
 create policy "admins manage unit photos" on storage.objects for all to authenticated
   using (bucket_id = 'unit-photos' and (select public.is_admin()))
   with check (bucket_id = 'unit-photos' and (select public.is_admin()));
+
+-- ---------------------------------------------------------------------------
+-- Update 2026-11: per-room free entrances, booking price snapshots, logbook,
+-- daily reports, and per-unit public availability. Safe to re-run.
+-- ---------------------------------------------------------------------------
+
+-- Number of guests (any age) whose entrance fee is included with the unit. Editable per unit in admin.
+-- Rooms start at 2; every other unit starts at 0. The default only applies the first time the column is added.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'units' and column_name = 'free_entrance_count'
+  ) then
+    alter table public.units add column free_entrance_count integer not null default 0 check (free_entrance_count >= 0);
+    update public.units set free_entrance_count = 2 where type = 'room';
+  end if;
+end $$;
+
+alter table public.bookings add column if not exists visit_type text;
+alter table public.bookings drop constraint if exists bookings_visit_type_check;
+alter table public.bookings add constraint bookings_visit_type_check check (visit_type is null or visit_type in ('day-tour', 'overnight'));
+-- Corkage listing: [{"label": "Red Horse x6", "amount": 300}, ...]
+alter table public.bookings add column if not exists corkage_items jsonb not null default '[]'::jsonb;
+-- Line-by-line price snapshot taken when the booking was priced, so later price edits never rewrite history.
+alter table public.bookings add column if not exists price_breakdown jsonb;
+-- True when an admin typed a total by hand instead of using the computed one.
+alter table public.bookings add column if not exists total_overridden boolean not null default false;
+
+insert into public.settings (key, value) values ('corkage_presets', '[]'::jsonb) on conflict (key) do nothing;
+
+-- Logbook: one entry per stay. Walk-ins are recorded as confirmed bookings first, so every entry has a booking.
+create table if not exists public.guest_log (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references public.bookings(id) on delete cascade,
+  actual_adults integer not null default 0 check (actual_adults >= 0),
+  actual_children integer not null default 0 check (actual_children >= 0),
+  checked_in_at timestamptz not null default now(),
+  checked_out_at timestamptz,
+  notes text,
+  checked_in_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (checked_out_at is null or checked_out_at >= checked_in_at)
+);
+create unique index if not exists guest_log_one_open_per_booking on public.guest_log (booking_id) where checked_out_at is null;
+create index if not exists guest_log_checked_in_idx on public.guest_log (checked_in_at desc);
+
+-- End-of-day report snapshots, saved when an admin closes the day.
+create table if not exists public.daily_reports (
+  report_date date primary key,
+  data jsonb not null,
+  closed_by uuid references auth.users(id) on delete set null,
+  closed_at timestamptz not null default now()
+);
+
+alter table public.guest_log enable row level security;
+alter table public.daily_reports enable row level security;
+drop policy if exists "admins manage guest log" on public.guest_log;
+create policy "admins manage guest log" on public.guest_log for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+drop policy if exists "admins manage daily reports" on public.daily_reports;
+create policy "admins manage daily reports" on public.daily_reports for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+grant select, insert, update, delete on public.guest_log, public.daily_reports to authenticated;
+
+-- Which units are taken on which days. Exposes no guest details. Pending requests do not reserve anything.
+-- state: 'booked' (this unit), 'exclusive' (whole resort event), 'closed' (admin closed the date).
+-- Units with no row for a day are free that day.
+drop function if exists public.get_unit_availability(date, date);
+create function public.get_unit_availability(from_date date, through_date date)
+returns table (unit_id uuid, day date, state text)
+language sql stable security definer set search_path = '' as $$
+  with days as (
+    select series.day::date as day
+    from generate_series(from_date::timestamp, through_date::timestamp, interval '1 day') as series(day)
+    where through_date - from_date <= 400
+  ),
+  live as (
+    select b.type, b.unit_ids, b.date_start, b.date_end
+    from public.bookings b
+    where b.status in ('awaiting_payment', 'confirmed')
+      and (b.status = 'confirmed' or b.hold_expires_at is null or b.hold_expires_at > now())
+      and b.date_end >= from_date and b.date_start <= through_date
+  )
+  select s.unit_id, s.day, s.state
+  from (
+    select u.id as unit_id, d.day,
+      case
+        when exists (select 1 from public.blocked_dates x where x.date = d.day) then 'closed'
+        when exists (select 1 from live l where l.type = 'exclusive' and d.day between l.date_start and l.date_end) then 'exclusive'
+        when exists (select 1 from live l where u.id = any(l.unit_ids) and d.day between l.date_start and l.date_end) then 'booked'
+      end as state
+    from public.units u cross join days d
+    where u.active
+  ) s
+  where s.state is not null;
+$$;
+revoke all on function public.get_unit_availability(date, date) from public;
+grant execute on function public.get_unit_availability(date, date) to anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.guest_log;
+    exception when duplicate_object then null;
+    end;
+  end if;
+end $$;
 
 commit;

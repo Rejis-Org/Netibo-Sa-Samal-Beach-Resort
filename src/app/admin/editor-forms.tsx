@@ -1,9 +1,11 @@
 import type { Database, Json } from "@/lib/supabase/database.types";
-import { addBlockedDateAction, removeBlockedDateAction, savePackageAction, saveSettingAction, saveUnitAction } from "./actions";
+import { normalizeCorkageItems, type CorkageItem } from "@/lib/pricing";
+import { addBlockedDateAction, editBookingAction, extendBookingAction, removeBlockedDateAction, saveCorkagePresetsAction, savePackageAction, saveSettingAction, saveUnitAction } from "./actions";
 
 type Unit = Database["public"]["Tables"]["units"]["Row"];
 type Package = Database["public"]["Tables"]["packages"]["Row"];
 type Setting = Database["public"]["Tables"]["settings"]["Row"];
+type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 
 function localized(value: Json, key: string) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -30,6 +32,7 @@ export function UnitEditor({ unit }: { unit: Unit }) {
         <Field label="Price (PHP, whole pesos)" name="price" type="number" min={0} defaultValue={unit.price_amount ?? ""} />
         <Field label="Minimum guests" name="capacity_min" type="number" min={0} defaultValue={unit.capacity_min ?? ""} />
         <Field label="Maximum guests" name="capacity_max" type="number" min={0} defaultValue={unit.capacity_max ?? ""} />
+        <Field label="Free entrances included (guests)" name="free_entrance_count" type="number" min={0} max={1000} defaultValue={unit.free_entrance_count} />
         <Field label="Display order" name="sort_order" type="number" min={0} defaultValue={unit.sort_order} />
         <Field label="Note about the price" name="price_note" defaultValue={unit.price_note ?? ""} />
         <label className="admin-checkbox"><input name="aircon" type="checkbox" defaultChecked={unit.aircon} />Air-conditioned</label>
@@ -105,6 +108,92 @@ export function SettingsEditor({ settings, owner }: { settings: Setting[]; owner
 }
 
 type BlockedDate = Database["public"]["Tables"]["blocked_dates"]["Row"];
+
+const pesoAmount = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 2, minimumFractionDigits: 0 });
+
+function corkageRows(items: CorkageItem[]) {
+  return [...items.map((item) => ({ label: item.label, amount: String(item.amount) })), ...Array.from({ length: 3 }, () => ({ label: "", amount: "" }))];
+}
+
+/** One line explaining how a booking's total was built, read from its saved price snapshot. */
+export function breakdownSummary(value: Json | null) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const data: Record<string, Json | undefined> = value;
+  const num = (key: string) => { const entry = data[key]; return typeof entry === "number" ? entry : null; };
+  const money = (key: string) => { const entry = num(key); return entry === null ? null : pesoAmount.format(entry); };
+  const parts: string[] = [];
+  if (data.kind === "stay") {
+    const rooms = num("unitsSubtotal");
+    const days = num("days");
+    if (rooms !== null && rooms > 0) parts.push(`Rooms ${money("unitsSubtotal")}${days !== null && days > 1 ? ` (${days} days)` : ""}`);
+    if (money("entranceGross")) parts.push(`Entrance ${money("entranceGross")}`);
+    const credit = num("freeCredit");
+    if (credit !== null && credit > 0) parts.push(`free entrance −${money("freeCredit")}`);
+  } else if (data.kind === "exclusive") {
+    if (money("packagePrice")) parts.push(`Package ${money("packagePrice")}`);
+    const extra = num("extraSubtotal");
+    if (extra !== null && extra > 0) parts.push(`extra guests ${money("extraSubtotal")}`);
+  } else return null;
+  const corkageTotal = num("corkageSubtotal");
+  if (corkageTotal !== null && corkageTotal > 0) parts.push(`corkage ${money("corkageSubtotal")}`);
+  return parts.join(" · ");
+}
+
+export function CorkagePresetsEditor({ presets }: { presets: CorkageItem[] }) {
+  return (
+    <details className="admin-edit-card">
+      <summary><span>Corkage presets</span><span>One-tap items on the booking form</span></summary>
+      <form action={saveCorkagePresetsAction} className="admin-form admin-editor-form">
+        <div className="admin-field-wide admin-corkage-rows">
+          <p className="admin-help">Item name and fee. Guests can add these with one tap; they can still type their own. Clear a row to remove it.</p>
+          {corkageRows(presets).map((row, index) => <div className="admin-corkage-row" key={index}>
+            <input name="corkage_label" maxLength={80} placeholder="Item, for example Red Horse 6-pack" defaultValue={row.label} />
+            <input name="corkage_amount" type="number" min={0} step="any" placeholder="Fee (PHP)" defaultValue={row.amount} />
+          </div>)}
+        </div>
+        <button className="button button-blue admin-field-wide" type="submit">Save corkage presets</button>
+      </form>
+    </details>
+  );
+}
+
+export function EditBookingForm({ booking }: { booking: Booking }) {
+  return (
+    <details className="admin-edit-card admin-booking-edit">
+      <summary><span>Edit details and price</span><span>{booking.total_overridden ? "Total set by hand" : "Total from price list"}</span></summary>
+      <form action={editBookingAction} className="admin-form admin-editor-form">
+        <input type="hidden" name="booking_id" value={booking.id} />
+        <label>Guest name<input name="guest_name" required maxLength={160} defaultValue={booking.guest_name} /></label>
+        <label>Phone<input name="phone" type="tel" required maxLength={40} defaultValue={booking.phone} /></label>
+        <label>Adults<input name="adults" type="number" min={0} max={1000} required defaultValue={booking.adults} /></label>
+        <label>Children ages 5–10<input name="children" type="number" min={0} max={1000} required defaultValue={booking.children} /></label>
+        <div className="admin-field-wide admin-corkage-rows">
+          <p className="admin-help">Corkage items and fees. Leave a row blank to skip it.</p>
+          {corkageRows(normalizeCorkageItems(booking.corkage_items)).map((row, index) => <div className="admin-corkage-row" key={index}>
+            <input name="corkage_label" maxLength={80} placeholder="Item" defaultValue={row.label} />
+            <input name="corkage_amount" type="number" min={0} step="any" placeholder="Fee (PHP)" defaultValue={row.amount} />
+          </div>)}
+        </div>
+        <label>Total (PHP)<input name="total" type="number" min={0} step="0.01" defaultValue={booking.total_amount} /></label>
+        <label className="admin-checkbox"><input name="recalc" type="checkbox" />Recalculate the total from today&apos;s prices (ignores the total typed here)</label>
+        <label className="admin-field-wide">Notes<textarea name="notes" rows={2} maxLength={1000} defaultValue={booking.notes ?? ""} /></label>
+        <button className="button button-blue admin-field-wide" type="submit">Save changes</button>
+      </form>
+    </details>
+  );
+}
+
+export function ExtendBookingForm({ booking, maxDays }: { booking: Booking; maxDays: number }) {
+  if (maxDays < 1) return <p className="admin-help admin-booking-extend">Cannot extend: the next day is already booked or closed.</p>;
+  return (
+    <form className="admin-booking-extend" action={extendBookingAction}>
+      <input type="hidden" name="booking_id" value={booking.id} />
+      <label>Extend by <input name="extra_days" type="number" min={1} max={maxDays} defaultValue={1} required /> day(s)</label>
+      <button className="button button-blue" type="submit">Extend stay</button>
+      <span className="admin-help">Up to {maxDays} more day{maxDays === 1 ? "" : "s"} free.</span>
+    </form>
+  );
+}
 
 export function BlockedDatesPanel({ dates }: { dates: BlockedDate[] }) {
   return (

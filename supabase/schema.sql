@@ -78,7 +78,7 @@ create table if not exists public.bookings (
   contact_extra text,
   notes text,
   status text not null default 'pending' check (status in ('pending', 'awaiting_payment', 'confirmed', 'cancelled', 'completed')),
-  total_amount integer not null default 0 check (total_amount >= 0),
+  total_amount numeric(12, 2) not null default 0 check (total_amount >= 0),
   deposit_required integer check (deposit_required is null or deposit_required >= 0),
   payment_deadline timestamptz,
   hold_expires_at timestamptz,
@@ -717,5 +717,7 @@ begin
     end;
   end if;
 end $$;
+
+alter table public.bookings alter column total_amount type numeric(12, 2);
 
 commit;

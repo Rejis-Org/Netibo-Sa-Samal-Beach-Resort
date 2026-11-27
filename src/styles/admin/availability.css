@@ -1,0 +1,81 @@
+.admin-grid-toolbar {
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.admin-grid-toolbar a {
+  color: var(--ocean);
+  font-size: 13px;
+  font-weight: 900;
+}
+.admin-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid #d6e5e2;
+  border-radius: 16px;
+  background: white;
+}
+.admin-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.admin-grid th,
+.admin-grid td {
+  padding: 7px 8px;
+  border: 1px solid #e3eeec;
+  text-align: center;
+  white-space: nowrap;
+}
+.admin-grid thead th {
+  background: #f7fbfa;
+  color: #4a6663;
+  font-weight: 900;
+}
+.admin-grid tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 130px;
+  background: #f7fbfa;
+  text-align: left;
+  font-weight: 900;
+}
+.admin-grid thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  text-align: left;
+}
+.admin-grid .admin-grid-today {
+  background: #fff4cf;
+}
+.admin-cell-free {
+  background: #edf7ee;
+  color: #2f6b3d;
+}
+.admin-cell-booked {
+  background: #fbe9e4;
+  color: #843c2a;
+  font-weight: 900;
+}
+.admin-cell-exclusive {
+  background: #f2dcd5;
+  color: #843c2a;
+  font-weight: 900;
+}
+.admin-cell-held {
+  background: #e0f2ef;
+  color: #137b72;
+  font-weight: 900;
+}
+.admin-cell-requested {
+  background: #fff2c9;
+  color: #735807;
+}
+.admin-cell-closed {
+  background: #e8ecec;
+  color: #566;
+}

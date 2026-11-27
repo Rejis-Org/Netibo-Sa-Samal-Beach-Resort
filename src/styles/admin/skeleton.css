@@ -1,0 +1,55 @@
+/* ===== Loading skeleton (shown while a section loads) ===== */
+.admin-skeleton {
+  max-width: 1100px;
+  display: grid;
+  gap: 18px;
+}
+.admin-skeleton-header {
+  padding-bottom: 20px;
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid #dae8e5;
+}
+.admin-skeleton-bar,
+.admin-skeleton-block {
+  display: block;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #e4eeec 25%, #f1f7f6 50%, #e4eeec 75%);
+  background-size: 200% 100%;
+  animation: admin-shimmer 1.2s linear infinite;
+}
+.admin-skeleton-bar-sm {
+  width: 110px;
+  height: 12px;
+}
+.admin-skeleton-bar-lg {
+  width: min(320px, 70%);
+  height: 34px;
+}
+.admin-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.admin-skeleton-grid .admin-skeleton-block {
+  height: 118px;
+}
+.admin-skeleton-block-tall {
+  height: 280px;
+}
+@keyframes admin-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (max-width: 980px) {
+  .admin-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-skeleton-bar,
+  .admin-skeleton-block {
+    animation: none;
+  }
+}

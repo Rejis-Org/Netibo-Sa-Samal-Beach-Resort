@@ -1,0 +1,173 @@
+.admin-price-breakdown {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+.admin-price-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e3eeec;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.report-toolbar {
+  margin-bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.report-toolbar a:not(.button) {
+  color: var(--ocean);
+  font-size: 13px;
+  font-weight: 900;
+}
+.report-toolbar .button {
+  min-height: 42px;
+  padding-inline: 16px;
+  cursor: pointer;
+}
+.report-date-form {
+  display: flex;
+  gap: 8px;
+}
+.report-date-form input {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #c9ddd9;
+  border-radius: 10px;
+}
+.report-table td,
+.report-table th {
+  text-align: left;
+  white-space: normal;
+}
+.report-close {
+  margin-top: 22px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.report-close .button {
+  border: 0;
+  cursor: pointer;
+}
+@media print {
+  .no-print,
+  .admin-nav {
+    display: none !important;
+  }
+  .admin-shell {
+    width: 100%;
+    padding: 0;
+  }
+  .admin-section {
+    break-inside: avoid;
+  }
+  .admin-grid-scroll {
+    overflow: visible;
+    border-radius: 0;
+  }
+  .admin-cell-booked,
+  .admin-cell-free {
+    background: none;
+    color: inherit;
+  }
+}
+/* ===== Daily report page (standalone page with its own header) ===== */
+.report-page .admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 18px 0;
+}
+.report-page .admin-topbar .eyebrow {
+  margin-bottom: 5px;
+}
+.report-page .admin-topbar h1 {
+  margin: 0;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: 1.05;
+}
+.report-page .admin-account {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: #53706d;
+  font-size: 13px;
+}
+.report-page .admin-summary-grid {
+  margin-block: 22px 42px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+.report-page .admin-summary-grid article {
+  min-height: 96px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #d7e6e3;
+  border-radius: 17px;
+  background: white;
+}
+.report-page .admin-section {
+  padding-top: 12px;
+  margin-top: 38px;
+}
+.report-page .admin-section-heading {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.report-page .admin-section-heading .eyebrow {
+  margin-bottom: 4px;
+}
+.report-page .admin-section-heading h2 {
+  margin: 0;
+  font-size: clamp(27px, 4vw, 35px);
+}
+.report-page .admin-section-heading > p {
+  max-width: 400px;
+  margin: 0;
+  color: #5c7773;
+  font-size: 13px;
+  line-height: 1.55;
+}
+@media print {
+  .report-page .admin-section {
+    break-inside: avoid;
+  }
+}
+@media (max-width: 760px) {
+  .report-page .admin-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .report-page .admin-account {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .report-page .admin-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 30px;
+  }
+  .report-page .admin-summary-grid article:last-child {
+    grid-column: 1 / -1;
+    min-height: 70px;
+  }
+  .report-page .admin-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}

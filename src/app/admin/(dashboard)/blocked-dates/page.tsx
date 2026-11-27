@@ -1,6 +1,6 @@
-import { BlockedDatesPanel } from "@/app/admin/editor-forms";
-import { requireAdmin } from "@/app/admin/require-admin";
-import { AdminPageFrame } from "@/app/admin/admin-ui";
+import { BlockedDatesPanel } from "@/app/admin/_components/availability/blocked-dates-panel";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
+import { AdminPageFrame } from "@/app/admin/_components/ui/admin-page-frame";
 import { manilaToday } from "@/lib/booking-data";
 
 export const metadata = { title: "Closed dates" };

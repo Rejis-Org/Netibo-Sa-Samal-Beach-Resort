@@ -1,0 +1,61 @@
+.admin-login-card .eyebrow,
+.admin-setup-card .eyebrow {
+  margin-bottom: 5px;
+}
+.admin-login-card h1,
+.admin-setup-card h1 {
+  margin: 0;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: 1.05;
+}
+.admin-back-link {
+  color: var(--ocean);
+  font-size: 13px;
+  font-weight: 900;
+}
+.admin-back-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.admin-login-wrap {
+  min-height: 100vh;
+  padding: 22px;
+  display: grid;
+  place-items: center;
+}
+.admin-login-card,
+.admin-setup-card {
+  width: min(490px, 100%);
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid #d6e5e2;
+  border-radius: 23px;
+  background: white;
+  box-shadow: 0 14px 45px rgb(12 59 56 / 9%);
+}
+.admin-login-card > p:not(.eyebrow),
+.admin-setup-card > p:not(.eyebrow) {
+  color: #53706d;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.admin-login-form {
+  margin-top: 22px;
+}
+.admin-login-form button {
+  width: 100%;
+  margin-top: 5px;
+}
+.admin-login-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.admin-back-link {
+  margin-bottom: 24px;
+}
+.admin-setup-card {
+  margin: 12vh auto 0;
+}
+.admin-setup-card .button {
+  margin-top: 10px;
+}

@@ -1,0 +1,44 @@
+.admin-body {
+  min-height: 100vh;
+  background: #f3f8f7;
+  color: var(--navy);
+}
+.admin-shell {
+  width: min(1120px, calc(100% - 40px));
+  margin-inline: auto;
+  padding-block: 26px 70px;
+}
+.admin-message {
+  margin-block: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.admin-message-error {
+  border: 1px solid #f1c8bd;
+  background: #fff1ed;
+  color: #88331e;
+}
+.admin-message-success {
+  border: 1px solid #b9dfc8;
+  background: #eaf7ef;
+  color: #17663a;
+}
+.admin-message-link {
+  color: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+}
+.admin-help {
+  margin: 0;
+  color: #5c7773;
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  .admin-shell {
+    width: calc(100% - 28px);
+    padding-top: 16px;
+  }
+}

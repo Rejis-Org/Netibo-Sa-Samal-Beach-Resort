@@ -8,7 +8,12 @@ export async function GET(request: Request) {
   const admin = await getAdminContext();
   if (!admin) return new Response("Not authorised", { status: 401 });
   const date = new URL(request.url).searchParams.get("date") ?? manilaToday();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T12:00:00Z`)) || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) return new Response("Invalid date", { status: 400 });
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    Number.isNaN(Date.parse(`${date}T12:00:00Z`)) ||
+    new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date
+  )
+    return new Response("Invalid date", { status: 400 });
   const result = await getDailyReport(admin.supabase, date);
   if (!result) return new Response("Could not build the report", { status: 500 });
   return new Response(reportToCsv(result.report), {

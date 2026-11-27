@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { SettingsEditor } from "@/app/admin/editor-forms";
-import { requireAdmin } from "@/app/admin/require-admin";
-import { AdminPageFrame } from "@/app/admin/admin-ui";
+import { SettingsEditor } from "@/app/admin/_components/settings/settings-editor";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
+import { AdminPageFrame } from "@/app/admin/_components/ui/admin-page-frame";
 
 export const metadata = { title: "Resort settings" };
 

@@ -3,7 +3,8 @@
 @import "../styles/layout.css";
 @import "../styles/home.css";
 @import "../styles/pages.css";
-@import "../styles/admin.css";
+@import "../styles/admin/index.css";
 @import "../styles/booking.css";
 @import "../styles/chat.css";
+@import "../styles/admin/chat.css";
 

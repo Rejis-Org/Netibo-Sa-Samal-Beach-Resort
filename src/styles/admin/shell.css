@@ -1,0 +1,296 @@
+/* ===== Admin app shell: sidebar + dashboard ===== */
+.admin-app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+}
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 20px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+  background: var(--navy);
+  color: #d6ebe8;
+}
+.admin-brand {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-brand-mark {
+  width: 52px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: white;
+}
+.admin-brand-mark img {
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+  object-fit: contain;
+}
+.admin-brand strong {
+  display: block;
+  color: white;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.admin-brand span {
+  color: #8fb5b0;
+  font-size: 12px;
+  font-weight: 800;
+}
+.admin-side-nav {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+.admin-nav-group {
+  display: grid;
+  gap: 3px;
+}
+.admin-nav-label {
+  margin: 0 12px 5px;
+  color: #7fa7a2;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.admin-nav-link {
+  min-height: 44px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 11px;
+  color: #cfe5e1;
+  font-size: 14px;
+  font-weight: 800;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.admin-nav-link:hover {
+  background: rgb(255 255 255 / 9%);
+  color: white;
+}
+.admin-nav-link-active,
+.admin-nav-link-active:hover {
+  background: #e6f4f1;
+  color: var(--ocean);
+}
+.admin-nav-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.admin-nav-badge {
+  min-width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f5b83d;
+  color: #3b2c00;
+  font-size: 11px;
+  font-weight: 900;
+}
+.admin-sidebar-footer {
+  display: grid;
+  gap: 10px;
+}
+.admin-account-card {
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 7%);
+}
+.admin-account-email {
+  overflow: hidden;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-account-role {
+  color: #8fb5b0;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.admin-account-card form {
+  margin: 6px 0 0;
+}
+.admin-signout {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 10px;
+  background: transparent;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.admin-signout:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.admin-main {
+  min-width: 0;
+  padding: 28px clamp(18px, 3vw, 40px) 60px;
+}
+.admin-page-header {
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #dae8e5;
+}
+.admin-page-header .eyebrow {
+  margin-bottom: 5px;
+}
+.admin-page-header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.05;
+}
+.admin-page-header-side {
+  max-width: 420px;
+  text-align: right;
+}
+.admin-page-header-side span {
+  color: var(--ocean);
+  font-size: 12px;
+  font-weight: 900;
+}
+.admin-page-header-side p {
+  margin: 4px 0 0;
+  color: #5c7773;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.admin-content {
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.admin-content > .admin-message {
+  margin: 0;
+}
+@media (min-width: 981px) {
+  .admin-mobilebar,
+  .admin-backdrop,
+  .admin-drawer-close {
+    display: none;
+  }
+}
+@media (max-width: 980px) {
+  .admin-app {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+  /* Top bar with menu button; the sidebar becomes a drawer that is closed until opened. */
+  .admin-mobilebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: 58px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--navy);
+    color: white;
+  }
+  .admin-mobilebar .admin-brand-mark {
+    width: 46px;
+    height: 34px;
+  }
+  .admin-mobilebar-title {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-menu-btn,
+  .admin-drawer-close {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 10px;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+  }
+  .admin-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: block;
+    border: 0;
+    background: rgb(6 28 26 / 55%);
+  }
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: min(284px, 86vw);
+    height: 100dvh;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.22s ease,
+      visibility 0s 0.22s;
+  }
+  .admin-sidebar-open {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.22s ease;
+  }
+  .admin-drawer-close {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+  .admin-main {
+    padding-top: 20px;
+  }
+  .admin-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-page-header-side {
+    max-width: none;
+    text-align: left;
+  }
+}

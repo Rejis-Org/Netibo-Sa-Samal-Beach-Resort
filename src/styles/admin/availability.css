@@ -6,10 +6,33 @@
   justify-content: space-between;
   gap: 10px;
 }
-.admin-grid-toolbar a {
+.admin-grid-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border: 1px solid #d6e5e2;
+  border-radius: 999px;
+  background: white;
   color: var(--ocean);
   font-size: 13px;
   font-weight: 900;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.admin-grid-nav:hover {
+  background: #f1f8f7;
+  border-color: var(--ocean);
+}
+.admin-grid-nav[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.admin-grid-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #2d4744;
 }
 .admin-grid-scroll {
   overflow-x: auto;
@@ -19,20 +42,41 @@
 }
 .admin-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 12px;
 }
 .admin-grid th,
 .admin-grid td {
-  padding: 7px 8px;
-  border: 1px solid #e3eeec;
+  padding: 8px 8px;
+  border-right: 1px solid #e3eeec;
+  border-bottom: 1px solid #e3eeec;
   text-align: center;
   white-space: nowrap;
+}
+.admin-grid th:last-child,
+.admin-grid td:last-child {
+  border-right: 0;
+}
+.admin-grid tbody tr:last-child th,
+.admin-grid tbody tr:last-child td {
+  border-bottom: 0;
 }
 .admin-grid thead th {
   background: #f7fbfa;
   color: #4a6663;
   font-weight: 900;
+  line-height: 1.25;
+}
+.admin-grid-weekday,
+.admin-grid-date {
+  display: block;
+}
+.admin-grid-weekday {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
 }
 .admin-grid tbody th {
   position: sticky;
@@ -51,6 +95,16 @@
 }
 .admin-grid .admin-grid-today {
   background: #fff4cf;
+}
+.admin-cell-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.admin-cell-inner svg,
+.admin-legend-swatch svg {
+  flex: none;
 }
 .admin-cell-free {
   background: #edf7ee;
@@ -78,4 +132,47 @@
 .admin-cell-closed {
   background: #e8ecec;
   color: #566;
+}
+
+/* Legend / info box under the table */
+.admin-grid-legend {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d6e5e2;
+  border-radius: 14px;
+  background: #f7fbfa;
+}
+.admin-grid-legend-title {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ocean);
+  font-size: 13px;
+  font-weight: 900;
+}
+.admin-grid-legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px 16px;
+  font-size: 12.5px;
+  color: #4a6663;
+}
+.admin-grid-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-legend-swatch {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 7px;
 }

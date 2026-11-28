@@ -20,6 +20,22 @@ import {
   logChange,
 } from "@/app/admin/_lib/action-helpers";
 
+const MAX_GUEST_NAMES = 60;
+
+// One guest name per line. Blank lines are skipped. A missing field means no names.
+// Returns null when the text, the list or a single name is too long.
+function parseGuestNames(formData: FormData) {
+  const text = formData.get("guest_names");
+  if (typeof text !== "string") return [];
+  if (text.length > 6000) return null;
+  const names = text
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  if (names.length > MAX_GUEST_NAMES || names.some((name) => name.length > 160)) return null;
+  return names;
+}
+
 export async function updateBookingStatusAction(formData: FormData) {
   const admin = await getAdminContext();
   if (!admin) redirect("/admin/login");
@@ -97,6 +113,7 @@ export async function createManualBookingAction(formData: FormData) {
   const guestName = readText(formData, "guest_name", 160);
   const phone = readText(formData, "phone", 40);
   const notes = readText(formData, "notes", 1000);
+  const guestNames = parseGuestNames(formData);
   const packageId = readText(formData, "package_id", 64);
   const status = readText(formData, "status", 20);
   const visit = readText(formData, "visit_type", 20);
@@ -120,6 +137,7 @@ export async function createManualBookingAction(formData: FormData) {
     !phone ||
     phone.length < 7 ||
     notes === null ||
+    guestNames === null ||
     packageId === null ||
     (status !== "confirmed" && status !== "pending") ||
     typeof adults !== "number" ||
@@ -195,6 +213,7 @@ export async function createManualBookingAction(formData: FormData) {
     adults,
     children,
     guest_name: guestName,
+    guest_names: guestNames ?? [],
     phone,
     guest_email: null,
     contact_extra: null,
@@ -237,6 +256,7 @@ export async function editBookingAction(formData: FormData) {
   const children = readInteger(formData, "children");
   const total = readMoney(formData, "total");
   const recalc = formData.get("recalc") === "on";
+  const guestNames = parseGuestNames(formData);
   const corkage = parseCorkageRows(
     readStrings(formData, "corkage_label", 200),
     readStrings(formData, "corkage_amount", 40),
@@ -247,6 +267,7 @@ export async function editBookingAction(formData: FormData) {
     !phone ||
     phone.length < 7 ||
     notes === null ||
+    guestNames === null ||
     typeof adults !== "number" ||
     typeof children !== "number" ||
     adults > 1000 ||
@@ -265,26 +286,44 @@ export async function editBookingAction(formData: FormData) {
     .eq("id", id)
     .maybeSingle();
   if (readError || !oldRow) redirect("/admin/bookings?error=booking");
+  // When the headcount or corkage changes, the breakdown is rebuilt so the receipt and the total match the new guests.
+  // "Recalculate" uses today's prices; otherwise the booking keeps the rates it was quoted at.
+  const guestsChanged =
+    adults !== oldRow.adults ||
+    children !== oldRow.children ||
+    JSON.stringify(corkage.items) !== JSON.stringify(normalizeCorkageItems(oldRow.corkage_items));
+  const typedTotal = total !== null && total !== oldRow.total_amount;
+  const priced =
+    recalc || guestsChanged
+      ? await priceBooking(admin.supabase, oldRow, {
+          adults,
+          children,
+          corkage: corkage.items,
+          useSnapshot: !recalc,
+        })
+      : null;
+  if (recalc && !priced) redirect("/admin/bookings?error=price");
   let nextTotal = oldRow.total_amount;
   let breakdown: Json | null = oldRow.price_breakdown;
   let overridden = oldRow.total_overridden;
-  if (recalc) {
-    const priced = await priceBooking(admin.supabase, oldRow, {
-      adults,
-      children,
-      corkage: corkage.items,
-      useSnapshot: false,
-    });
-    if (!priced) redirect("/admin/bookings?error=price");
-    nextTotal = priced.total;
+  if (priced) {
     breakdown = priced as unknown as Json;
-    overridden = false;
+    if (recalc || (!typedTotal && !oldRow.total_overridden)) {
+      nextTotal = priced.total;
+      overridden = false;
+    } else if (typedTotal) {
+      // The admin typed their own total, so it wins and is flagged as set by hand.
+      nextTotal = total ?? oldRow.total_amount;
+      overridden = nextTotal !== priced.total;
+    }
+    // Otherwise the total was already set by hand and the admin left it alone, so it stays.
   } else {
     nextTotal = total ?? oldRow.total_amount;
     overridden = oldRow.total_overridden || nextTotal !== oldRow.total_amount;
   }
   const update = {
     guest_name: guestName,
+    guest_names: guestNames ?? [],
     phone,
     notes: notes || null,
     adults,

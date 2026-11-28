@@ -17,6 +17,7 @@
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
 }
 .admin-login-wrap {
   min-height: 100vh;

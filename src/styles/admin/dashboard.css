@@ -16,13 +16,17 @@
   color: var(--navy);
   transition:
     border-color 0.15s,
-    box-shadow 0.15s,
-    transform 0.15s;
+    box-shadow 0.15s;
 }
-.admin-summary-grid a:hover {
+.admin-stat-card {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.admin-summary-grid a:hover,
+.admin-content .admin-stat-card:hover {
   border-color: var(--ocean);
   box-shadow: 0 8px 22px rgb(12 59 56 / 9%);
-  transform: translateY(-1px);
 }
 .admin-summary-grid span {
   color: #53706d;

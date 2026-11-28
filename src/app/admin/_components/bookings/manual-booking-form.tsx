@@ -150,6 +150,10 @@ export function ManualBookingForm(props: ManualBookingProps) {
           Phone
           <input name="phone" type="tel" required maxLength={40} />
         </label>
+        <label className="admin-field-wide">
+          All guest names (one per line, optional)
+          <textarea name="guest_names" rows={3} maxLength={6000} placeholder={"robert\nmaria"} />
+        </label>
         <CorkageRows
           help="Corkage: item and fee. A new row appears when you fill the last one."
           labelPlaceholder="Item"

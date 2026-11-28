@@ -638,6 +638,8 @@ alter table public.bookings add column if not exists corkage_items jsonb not nul
 alter table public.bookings add column if not exists price_breakdown jsonb;
 -- True when an admin typed a total by hand instead of using the computed one.
 alter table public.bookings add column if not exists total_overridden boolean not null default false;
+-- Names of every guest in the party (one entry per person), shown on the receipt. guest_name stays the person who booked.
+alter table public.bookings add column if not exists guest_names text[] not null default '{}';
 
 insert into public.settings (key, value) values ('corkage_presets', '[]'::jsonb) on conflict (key) do nothing;
 

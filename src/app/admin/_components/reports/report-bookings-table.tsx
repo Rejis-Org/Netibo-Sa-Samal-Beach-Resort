@@ -25,9 +25,9 @@ export function ReportBookingsTable({ result }: { result: DailyReportResult }) {
                 <th scope="col">Booked</th>
                 <th scope="col">Today</th>
                 <th scope="col">Status</th>
-                <th scope="col">Guests</th>
-                <th scope="col">Booking total</th>
-                <th scope="col">Share for today</th>
+                <th scope="col" className="num">Guests</th>
+                <th scope="col" className="num">Booking total</th>
+                <th scope="col" className="num">Share for today</th>
               </tr>
             </thead>
             <tbody>
@@ -40,10 +40,10 @@ export function ReportBookingsTable({ result }: { result: DailyReportResult }) {
                   </th>
                   <td>{row.title}</td>
                   <td>{roleLabel[row.role]}</td>
-                  <td>{row.status.replaceAll("_", " ")}</td>
-                  <td>{row.adults + row.children}</td>
-                  <td>{peso.format(row.total)}</td>
-                  <td>{peso.format(row.share)}</td>
+                  <td className="report-status">{row.status.replaceAll("_", " ")}</td>
+                  <td className="num">{row.adults + row.children}</td>
+                  <td className="num">{peso.format(row.total)}</td>
+                  <td className="num">{peso.format(row.share)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,11 +1,24 @@
 import type { getDailyReport } from "@/lib/daily-report-data";
 import { formatDateTime, formatFullDate } from "@/app/admin/_lib/format";
+import { MotionCard } from "@/app/admin/_components/ui/motion-card";
 
 type DailyReportResult = NonNullable<Awaited<ReturnType<typeof getDailyReport>>>;
 
+function Headcount({ label, adults, kids }: { label: string; adults: number; kids: number }) {
+  return (
+    <MotionCard>
+      <span>{label}</span>
+      <strong>{adults + kids}</strong>
+      <small>
+        {adults} adults, {kids} children
+      </small>
+    </MotionCard>
+  );
+}
+
 export function ReportSummary({ result, date, today }: { result: DailyReportResult; date: string; today: string }) {
   const dateLabel = formatFullDate(date);
-  const people = (adults: number, children: number) => `${adults + children} (${adults} adults, ${children} children)`;
+  const { counts, headcount } = result.report;
 
   return (
     <section className="admin-section">
@@ -27,36 +40,38 @@ export function ReportSummary({ result, date, today }: { result: DailyReportResu
         </p>
       </div>
       <div className="admin-summary-grid">
-        <article>
+        <MotionCard>
           <span>Arriving</span>
-          <strong>{result.report.counts.arrivals}</strong>
-        </article>
-        <article>
+          <strong>{counts.arrivals}</strong>
+        </MotionCard>
+        <MotionCard>
           <span>Stays today</span>
-          <strong>{result.report.counts.inHouse}</strong>
-        </article>
-        <article>
+          <strong>{counts.inHouse}</strong>
+        </MotionCard>
+        <MotionCard>
           <span>Leaving</span>
-          <strong>{result.report.counts.departures}</strong>
-        </article>
-        <article>
+          <strong>{counts.departures}</strong>
+        </MotionCard>
+        <MotionCard>
           <span>Places booked</span>
           <strong>
-            {result.report.counts.unitsBooked} of {result.report.counts.unitsTotal}
+            {counts.unitsBooked} <small>of {counts.unitsTotal}</small>
           </strong>
-        </article>
+        </MotionCard>
       </div>
-      <p className="admin-help">
-        Guests booked: {people(result.report.headcount.bookedAdults, result.report.headcount.bookedChildren)}
-      </p>
-      <p className="admin-help">
-        Guests checked in during the day:{" "}
-        {people(result.report.headcount.checkedInAdults, result.report.headcount.checkedInChildren)}
-      </p>
-      <p className="admin-help">
-        Still in the resort at the end of the day:{" "}
-        {people(result.report.headcount.stillInAdults, result.report.headcount.stillInChildren)}
-      </p>
+      <div className="report-headcount">
+        <Headcount label="Guests booked" adults={headcount.bookedAdults} kids={headcount.bookedChildren} />
+        <Headcount
+          label="Guests checked in during the day"
+          adults={headcount.checkedInAdults}
+          kids={headcount.checkedInChildren}
+        />
+        <Headcount
+          label="Still in the resort at the end of the day"
+          adults={headcount.stillInAdults}
+          kids={headcount.stillInChildren}
+        />
+      </div>
     </section>
   );
 }

@@ -45,6 +45,16 @@ export function EditBookingForm({ booking }: { booking: Booking }) {
           Recalculate the total from today&apos;s prices (ignores the total typed here)
         </label>
         <label className="admin-field-wide">
+          All guest names (one per line)
+          <textarea
+            name="guest_names"
+            rows={3}
+            maxLength={6000}
+            placeholder={"robert\nmaria"}
+            defaultValue={(booking.guest_names ?? []).join("\n")}
+          />
+        </label>
+        <label className="admin-field-wide">
           Notes
           <textarea name="notes" rows={2} maxLength={1000} defaultValue={booking.notes ?? ""} />
         </label>

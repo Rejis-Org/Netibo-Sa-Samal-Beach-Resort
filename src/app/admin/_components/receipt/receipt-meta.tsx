@@ -19,6 +19,12 @@ export function ReceiptMeta({ booking, bookedName }: { booking: Booking; bookedN
         <dt>Guest</dt>
         <dd>{booking.guest_name}</dd>
       </div>
+      {booking.guest_names?.length > 0 && (
+        <div>
+          <dt>All guests</dt>
+          <dd>{booking.guest_names.join(", ")}</dd>
+        </div>
+      )}
       <div>
         <dt>Phone</dt>
         <dd>{booking.phone}</dd>

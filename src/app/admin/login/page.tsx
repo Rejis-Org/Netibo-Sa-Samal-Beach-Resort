@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { loginAction } from "@/app/admin/_actions/auth";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
@@ -12,7 +13,8 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
     <main className="admin-login-wrap">
       <section className="admin-login-card">
         <Link className="admin-back-link" href="/">
-          ← Back to the website
+          <ArrowLeft size={16} aria-hidden="true" />
+          Back to the website
         </Link>
         <p className="eyebrow">Netibo sa Samal</p>
         <h1>Owner and staff sign in</h1>

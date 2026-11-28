@@ -40,6 +40,7 @@ type Booking = {
   total_amount: number; deposit_required: number | null; payment_deadline: string | null; hold_expires_at: string | null;
   access_token: string; guest_uid: string | null; created_at: string; updated_at: string;
   visit_type: "day-tour" | "overnight" | null; corkage_items: Json; price_breakdown: Json | null; total_overridden: boolean;
+  guest_names: string[];
 };
 type GuestLog = {
   id: string; booking_id: string; actual_adults: number; actual_children: number;
@@ -58,9 +59,10 @@ export type Database = {
         key: string; value: Json; updated_at?: string; updated_by?: string | null;
       }, Partial<Setting>>;
       user_roles: Table<UserRole, UserRole, Partial<UserRole>>;
-      bookings: Table<Booking, Omit<Booking, "id" | "created_at" | "updated_at" | "access_token" | "visit_type" | "corkage_items" | "price_breakdown" | "total_overridden"> & {
+      bookings: Table<Booking, Omit<Booking, "id" | "created_at" | "updated_at" | "access_token" | "visit_type" | "corkage_items" | "price_breakdown" | "total_overridden" | "guest_names"> & {
         id?: string; created_at?: string; updated_at?: string; access_token?: string;
         visit_type?: Booking["visit_type"]; corkage_items?: Json; price_breakdown?: Json | null; total_overridden?: boolean;
+        guest_names?: string[];
       }, Partial<Booking>>;
       guest_log: Table<GuestLog, Omit<GuestLog, "id" | "created_at" | "checked_in_at" | "checked_out_at" | "notes" | "checked_in_by" | "actual_adults" | "actual_children"> & {
         id?: string; created_at?: string; checked_in_at?: string; checked_out_at?: string | null; notes?: string | null;

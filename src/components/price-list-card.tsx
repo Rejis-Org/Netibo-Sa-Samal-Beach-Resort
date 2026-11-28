@@ -4,7 +4,6 @@ import { getLocale } from "next-intl/server";
 import type { AppLocale } from "@/i18n/routing";
 import { getPublicCatalog } from "@/lib/catalog-data";
 import { formatPhp } from "@/lib/format";
-import { getUnitPhotos } from "@/lib/unit-photos";
 
 type ResortCatalogProps = { mode: "packages" | "units" };
 
@@ -13,8 +12,8 @@ export async function ResortCatalog({ mode }: ResortCatalogProps) {
   const locale = await getLocale() as AppLocale;
   const { packages, entranceFees, units: resortUnits, source } = await getPublicCatalog(locale);
   const units = mode === "units";
-  // Rooms 1-3 stay hidden here until they have photos.
-  const visibleUnits = resortUnits.filter((unit) => !/^Room [1-3]$/.test(unit.name));
+  // A unit shows on this page only once it has at least one photo (decision D1-B).
+  const visibleUnits = resortUnits.filter((unit) => unit.photos.length > 0);
   const isEmpty = units ? visibleUnits.length === 0 && entranceFees.length === 0 : packages.length === 0;
   return (
     <div className="catalog-stack">
@@ -40,13 +39,13 @@ export async function ResortCatalog({ mode }: ResortCatalogProps) {
           {visibleUnits.length > 0 && <section className="catalog-section" aria-labelledby="units-title">
             <div className="section-heading section-heading-left"><p className="eyebrow">{t("unitsEyebrow")}</p><h2 id="units-title">{t("unitsTitle")}</h2></div>
             <div className="catalog-grid">
-              {visibleUnits.map((unit) => { const photos = getUnitPhotos(unit.name); return <article className="catalog-card catalog-unit-card" key={unit.name}>
-                {photos.length > 0 && <UnitGallery name={unit.name} photos={photos} />}
+              {visibleUnits.map((unit) => <article className="catalog-card catalog-unit-card" key={unit.slug}>
+                <UnitGallery name={unit.name} photos={unit.photos} />
                 <h3>{unit.name}</h3>
                 {unit.capacity && <p>{t("capacity", { capacity: unit.capacity })}</p>}
                 {unit.features.map((feature) => <p className="catalog-feature" key={feature}>{t(feature)}</p>)}
                 <strong className="catalog-price">{unit.price === null ? t("askPrice") : formatPhp(unit.price)}</strong>
-              </article>; })}
+              </article>)}
             </div>
           </section>}
           {entranceFees.length > 0 && <section className="catalog-section" aria-labelledby="entrance-fees-title">

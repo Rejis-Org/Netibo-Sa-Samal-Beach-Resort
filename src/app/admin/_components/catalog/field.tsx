@@ -5,6 +5,7 @@ export function Field({
   type = "text",
   min,
   max,
+  required,
 }: {
   label: string;
   name: string;
@@ -12,11 +13,12 @@ export function Field({
   type?: string;
   min?: number;
   max?: number;
+  required?: boolean;
 }) {
   return (
     <label>
       {label}
-      <input name={name} type={type} defaultValue={defaultValue} min={min} max={max} />
+      <input name={name} type={type} defaultValue={defaultValue} min={min} max={max} required={required} />
     </label>
   );
 }

@@ -13,7 +13,14 @@ export function manualBookingFormProps(
   return {
     packages: options.packages
       .filter((item) => item.scope === "exclusive" && item.price !== null)
-      .map((item) => ({ id: item.id, name: item.name, price: item.price, paxIncluded: item.paxIncluded })),
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        paxIncluded: item.paxIncluded,
+        weekdayOnly: item.weekdayOnly,
+        weekendOnly: item.weekendOnly,
+      })),
     units: options.units.map((item) => ({
       id: item.id,
       name: item.name,

@@ -8,12 +8,13 @@ import { useManualBooking, type ManualBookingProps } from "@/app/admin/_componen
 
 /** Phone, Messenger and walk-in bookings. Uses the same availability and price rules as the public form. */
 export function ManualBookingForm(props: ManualBookingProps) {
-  const { packages, today, walkIn = false } = props;
+  const { today, walkIn = false } = props;
   const {
     kind,
     setKind,
     packageId,
     setPackageId,
+    availablePackages,
     visitType,
     setVisitType,
     start,
@@ -32,6 +33,8 @@ export function ManualBookingForm(props: ManualBookingProps) {
     chosen,
     fees,
     total,
+    totalInput,
+    setTotalInput,
     edit,
     canSubmit,
   } = useManualBooking(props);
@@ -68,12 +71,15 @@ export function ManualBookingForm(props: ManualBookingProps) {
           <label>
             Whole-resort package
             <select name="package_id" value={packageId} onChange={(event) => setPackageId(event.target.value)}>
-              {packages.map((item) => (
+              {availablePackages.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
               ))}
             </select>
+            {start && availablePackages.length === 0 && (
+              <span className="admin-help">No whole-resort package is offered on this date.</span>
+            )}
           </label>
         ) : (
           <label>
@@ -162,13 +168,15 @@ export function ManualBookingForm(props: ManualBookingProps) {
         />
 
         <label>
-          Total (PHP) — blank uses the automatic total
+          Total (PHP) — filled in automatically, type to change it
           <input
-            name="total"
+            name={totalInput === null ? undefined : "total"}
             type="number"
             min={0}
             step="0.01"
-            placeholder={total === null ? "Set prices first" : String(total)}
+            value={totalInput ?? (total === null ? "" : String(total))}
+            placeholder={total === null ? "Set prices first" : undefined}
+            onChange={(event) => setTotalInput(event.target.value === "" ? null : event.target.value)}
           />
         </label>
         {!walkIn && (

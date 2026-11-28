@@ -4,7 +4,14 @@ import { MAX_CORKAGE_ROWS, parseCorkageRows, priceExclusive, priceStay } from "@
 import type { EntranceFees } from "@/lib/booking-data";
 
 export type ManualBookingProps = {
-  packages: { id: string; name: string; price: number | null; paxIncluded: number | null }[];
+  packages: {
+    id: string;
+    name: string;
+    price: number | null;
+    paxIncluded: number | null;
+    weekdayOnly: boolean;
+    weekendOnly: boolean;
+  }[];
   units: { id: string; name: string; price: number | null; freeEntranceCount: number }[];
   unitRows: UnitAvailabilityRow[];
   entranceFees: EntranceFees;
@@ -27,7 +34,8 @@ export function useManualBooking({
   walkIn = false,
 }: ManualBookingProps) {
   const [kind, setKind] = useState("unit");
-  const [packageId, setPackageId] = useState(packages[0]?.id ?? "");
+  const [pickedPackageId, setPickedPackageId] = useState(packages[0]?.id ?? "");
+  const [totalInput, setTotalInput] = useState<string | null>(null);
   const [visitType, setVisitType] = useState<"day-tour" | "overnight">("day-tour");
   const [start, setStart] = useState(walkIn ? today : "");
   const [end, setEnd] = useState("");
@@ -49,7 +57,18 @@ export function useManualBooking({
     rows.map((row) => row.amount),
   );
   const fees = entranceFees[visitType];
-  const selectedPackage = packages.find((item) => item.id === packageId);
+  // Whole-resort packages follow the date: weekday-only ones are hidden on Saturday/Sunday and weekend-only ones on
+  // weekdays. Packages with neither flag are always offered. Same rule as the public booking form.
+  const startDay = start ? new Date(`${start}T00:00:00Z`).getUTCDay() : null;
+  const isWeekend = startDay === 0 || startDay === 6;
+  const availablePackages =
+    startDay === null
+      ? packages
+      : packages.filter((item) => !(item.weekdayOnly && isWeekend) && !(item.weekendOnly && !isWeekend));
+  const packageId = availablePackages.some((item) => item.id === pickedPackageId)
+    ? pickedPackageId
+    : (availablePackages[0]?.id ?? "");
+  const selectedPackage = availablePackages.find((item) => item.id === packageId);
 
   let total: number | null = null;
   if (kind === "exclusive") {
@@ -107,7 +126,8 @@ export function useManualBooking({
     kind,
     setKind,
     packageId,
-    setPackageId,
+    setPackageId: setPickedPackageId,
+    availablePackages,
     visitType,
     setVisitType,
     start,
@@ -126,6 +146,8 @@ export function useManualBooking({
     chosen,
     fees,
     total,
+    totalInput,
+    setTotalInput,
     edit,
     canSubmit,
   };

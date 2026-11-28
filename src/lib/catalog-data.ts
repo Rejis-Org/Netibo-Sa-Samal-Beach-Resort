@@ -1,6 +1,6 @@
 import type { AppLocale } from "@/i18n/routing";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
-import { exclusivePackages as fallbackPackages, entranceFees as fallbackFees, resortUnits as fallbackUnits } from "./catalog";
+import { exclusivePackages as fallbackPackages, entranceFees as fallbackFees } from "./catalog";
 
 type Localized = Record<string, unknown>;
 type PublicPackage = {
@@ -8,6 +8,14 @@ type PublicPackage = {
   pax_included: number | null; weekday_only: boolean; weekend_only: boolean; notes: unknown;
 };
 type EntranceFee = { name: string; adultPrice: number | null; childPrice: number | null };
+export type PublicUnit = {
+  slug: string;
+  name: string;
+  capacity: string | null;
+  price: number | null;
+  features: ("aircon" | "ownCr")[];
+  photos: string[];
+};
 
 function localized(value: unknown, locale: AppLocale) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -19,11 +27,11 @@ function localized(value: unknown, locale: AppLocale) {
 }
 
 function fallbackCatalog() {
-  return { packages: [...fallbackPackages], entranceFees: [...fallbackFees], units: [...fallbackUnits], source: "fallback" as const };
+  return { packages: [...fallbackPackages], entranceFees: [...fallbackFees], units: [] as PublicUnit[], source: "fallback" as const };
 }
 
 function unavailableCatalog() {
-  return { packages: [], entranceFees: [], units: [], source: "error" as const };
+  return { packages: [], entranceFees: [], units: [] as PublicUnit[], source: "error" as const };
 }
 
 export async function getPublicCatalog(locale: AppLocale) {
@@ -37,7 +45,8 @@ export async function getPublicCatalog(locale: AppLocale) {
     ]);
 
     if (unitResult.error || packageResult.error) return unavailableCatalog();
-    const units = (unitResult.data ?? []).map((unit) => ({
+    const units: PublicUnit[] = (unitResult.data ?? []).map((unit) => ({
+      slug: unit.slug,
       name: unit.name,
       capacity: unit.capacity_min === null && unit.capacity_max === null
         ? null
@@ -49,6 +58,9 @@ export async function getPublicCatalog(locale: AppLocale) {
         ...(unit.aircon ? ["aircon" as const] : []),
         ...(unit.has_own_cr ? ["ownCr" as const] : []),
       ],
+      photos: Array.isArray(unit.photos)
+        ? (unit.photos as unknown[]).filter((src): src is string => typeof src === "string" && src.length > 0)
+        : [],
     }));
     const packages = (packageResult.data ?? []) as PublicPackage[];
     const exclusive = packages

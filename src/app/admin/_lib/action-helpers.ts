@@ -23,10 +23,11 @@ export async function logChange(
   targetId: string,
   oldData: Json | null,
   newData: Json,
+  action: "created" | "updated" = "updated",
 ) {
   const { error } = await supabase.from("audit_log").insert({
     actor_id: actorId,
-    action: "updated",
+    action,
     target_table: table,
     target_id: targetId,
     old_data: oldData,

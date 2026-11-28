@@ -1,7 +1,8 @@
 import type { Database } from "@/lib/supabase/database.types";
 import { normalizeCorkageItems } from "@/lib/pricing";
 import { editBookingAction } from "@/app/admin/_actions/bookings";
-import { CorkageRows, corkageRows } from "./corkage-rows";
+import { CorkageRows } from "./corkage-rows";
+import { corkageRows } from "./corkage-rows-data";
 
 type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 
@@ -31,7 +32,7 @@ export function EditBookingForm({ booking }: { booking: Booking }) {
           <input name="children" type="number" min={0} max={1000} required defaultValue={booking.children} />
         </label>
         <CorkageRows
-          help="Corkage items and fees. Leave a row blank to skip it."
+          help="Corkage items and fees. Use Add corkage for more rows; blank rows are skipped."
           labelPlaceholder="Item"
           rows={corkageRows(normalizeCorkageItems(booking.corkage_items))}
         />

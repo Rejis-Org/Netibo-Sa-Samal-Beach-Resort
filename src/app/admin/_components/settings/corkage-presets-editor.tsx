@@ -1,6 +1,7 @@
 import type { CorkageItem } from "@/lib/pricing";
 import { saveCorkagePresetsAction } from "@/app/admin/_actions/settings";
-import { CorkageRows, corkageRows } from "@/app/admin/_components/bookings/corkage-rows";
+import { CorkageRows } from "@/app/admin/_components/bookings/corkage-rows";
+import { corkageRows } from "@/app/admin/_components/bookings/corkage-rows-data";
 
 export function CorkagePresetsEditor({ presets }: { presets: CorkageItem[] }) {
   return (

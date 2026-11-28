@@ -49,6 +49,11 @@ const messages = {
     dialogLabel: "Mga hulagway sa {name}", photoOf: "{current} sa {total}", photoAlt: "{name}, hulagway {number} sa {total}", close: "Sirad-i ang mga hulagway", previous: "Naunang hulagway", next: "Sunod nga hulagway", thumbnails: "Gagmay nga hulagway", showPhoto: "Ipakita ang hulagway {number}",
   },
   footer: { homeLabel: "Home sa Netibo sa Samal", address: "Purok 3, Barangay Kinawitnon, Babak, Samal, Davao del Norte", navigationLabel: "Footer navigation", facebook: "Facebook page", copyright: "Netibo sa Samal Beach Resort" },
+  notFound: {
+    metaTitle: "Wala makita ang panid", eyebrow: "Error 404", title: "Naanod man ning panid",
+    text: "Wala mi makit-i ang panid nga imong gipangita. Basin gibalhin na kini, o gamay ra nasayop ang link. Balik ta sa baybayon.",
+    home: "Balik sa home", book: "Mag-book og stay", linksLabel: "O adto sa usa niini",
+  },
 };
 
 export default messages;

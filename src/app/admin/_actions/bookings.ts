@@ -162,8 +162,16 @@ export async function createManualBookingAction(formData: FormData) {
 
   if (kind === "exclusive") {
     if (!packageId) redirect("/admin/bookings?error=manual");
-    const { data: item } = await admin.supabase.from("packages").select("id,scope").eq("id", packageId).maybeSingle();
+    const { data: item } = await admin.supabase
+      .from("packages")
+      .select("id,scope,weekday_only,weekend_only")
+      .eq("id", packageId)
+      .maybeSingle();
     if (!item || item.scope !== "exclusive") redirect("/admin/bookings?error=manual");
+    // Weekday and weekend packages only apply on their own days (Saturday and Sunday count as the weekend).
+    const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+    const weekend = day === 0 || day === 6;
+    if ((item.weekday_only && weekend) || (item.weekend_only && !weekend)) redirect("/admin/bookings?error=manual");
   }
 
   await expireUnpaidHolds();

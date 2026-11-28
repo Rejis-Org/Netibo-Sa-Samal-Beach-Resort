@@ -20,6 +20,7 @@ export const errorMessages: Record<string, string> = {
 
 export const savedMessages: Record<string, string> = {
   manual: "Booking saved. The date is now on the calendar.",
+  unitAdded: "Cottage or room added. The public pages now show the latest catalog.",
   booking: "Booking updated.",
   extended: "The stay was extended.",
   checkin: "Guest checked in.",

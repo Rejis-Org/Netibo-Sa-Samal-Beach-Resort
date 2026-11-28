@@ -1,0 +1,218 @@
+/* Floating dialog (native <dialog>) and the cottages and rooms screen pieces that use it. */
+.admin-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 24px 70px rgb(8 40 38 / 35%);
+  overflow: hidden;
+}
+.admin-modal[open] {
+  display: flex;
+  flex-direction: column;
+}
+.admin-modal::backdrop {
+  background: rgb(8 40 38 / 55%);
+  backdrop-filter: blur(2px);
+}
+body:has(dialog.admin-modal[open]) {
+  overflow: hidden;
+}
+.admin-modal-head {
+  flex: none;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e4eeeb;
+}
+.admin-modal-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 1000;
+}
+.admin-modal-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #e5f3f0;
+  color: var(--ocean);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.admin-modal-form {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.admin-modal-body {
+  min-height: 0;
+  flex: 1;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 14px;
+  overflow-y: auto;
+}
+.admin-modal-foot {
+  flex: none;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #e4eeeb;
+  background: #f6faf9;
+}
+.admin-modal-cancel {
+  background: #e5f3f0;
+  color: var(--ocean);
+}
+@media (max-width: 640px) {
+  .admin-modal {
+    width: 100%;
+    max-height: 94dvh;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+  }
+  .admin-modal-body {
+    grid-template-columns: 1fr;
+  }
+  .admin-modal-foot .button {
+    flex: 1;
+  }
+}
+
+/* Cottages and rooms page */
+.admin-units-toolbar {
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Photo manager */
+.admin-photos {
+  display: grid;
+  gap: 10px;
+}
+.admin-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #4a6663;
+  font-size: 12px;
+  font-weight: 900;
+}
+.admin-photos-head span span {
+  color: #5f7773;
+  font-weight: 700;
+}
+.admin-photos-hint {
+  margin: 0;
+  color: #5f7773;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.admin-photos-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 12px;
+  font-weight: 800;
+}
+.admin-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+.admin-photo {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d6e5e2;
+  border-radius: 12px;
+  background: #f2f7f6;
+}
+.admin-photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: block;
+  object-fit: cover;
+}
+.admin-photo-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--ocean);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+.admin-photo-actions {
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+}
+.admin-photo-actions button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: #e5f3f0;
+  color: var(--ocean);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.admin-photo-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.admin-photo-actions .admin-photo-remove {
+  background: #fde8e6;
+  color: #b3261e;
+}
+/* Cover button sits on its own full-width row under the arrows and the remove button. */
+.admin-photo-actions button:nth-child(3) {
+  order: 2;
+  flex: 1 1 100%;
+}
+.admin-photo-uploading {
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: #5f7773;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+/* Invisible field that blocks form submission while a photo is still uploading. */
+.admin-form input.admin-photo-guard {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
